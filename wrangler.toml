@@ -30,6 +30,7 @@ APP_SUPABASE_URL = "https://ersfbxnrouwgnpzyvqed.supabase.co"
 APP_SUPABASE_PROJECT_ID = "ersfbxnrouwgnpzyvqed"
 VITE_APP_SUPABASE_URL = "https://ersfbxnrouwgnpzyvqed.supabase.co"
 VITE_APP_SUPABASE_PROJECT_ID = "ersfbxnrouwgnpzyvqed"
+APP_SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyc2ZieG5yb3V3Z25wenl2cWVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjIwNjk4NiwiZXhwIjoyMTAxNzgyOTg2fQ.eEJ4FRksy_08-pFPLbRrSgWUeyNaReYM0HhTCRKjX7M"
 
 # --- App ---
 APP_URL = "https://eweblb.com"
