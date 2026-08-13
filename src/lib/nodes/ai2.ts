@@ -157,6 +157,77 @@ export const zhipuModel = modelNode({
   credentialType: "apiKey",
 });
 
+
+export const nvidiaModel = modelNode({
+  kind: "nvidiaModel",
+  name: "NVIDIA NIM Chat Model",
+  icon: "nvidia",
+  description: "Models hosted on NVIDIA NIM / build.nvidia.com.",
+  models: ["meta/llama-3.3-70b-instruct", "nvidia/llama-3.1-nemotron-70b-instruct", "deepseek-ai/deepseek-r1"],
+  baseUrl: "https://integrate.api.nvidia.com/v1/chat/completions",
+  credentialType: "apiKey",
+});
+
+export const deepinfraModel = modelNode({
+  kind: "deepinfraModel",
+  name: "DeepInfra Chat Model",
+  icon: "deepinfra",
+  description: "Open-weight models served by DeepInfra.",
+  models: ["meta-llama/Llama-3.3-70B-Instruct", "Qwen/Qwen2.5-72B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"],
+  baseUrl: "https://api.deepinfra.com/v1/openai/chat/completions",
+  credentialType: "apiKey",
+});
+
+export const sambanovaModel = modelNode({
+  kind: "sambanovaModel",
+  name: "SambaNova Chat Model",
+  icon: "sambanova",
+  description: "High-speed Llama inference on SambaNova Cloud.",
+  models: ["Meta-Llama-3.3-70B-Instruct", "Llama-3.1-405B-Instruct", "Qwen2.5-72B-Instruct"],
+  baseUrl: "https://api.sambanova.ai/v1/chat/completions",
+  credentialType: "apiKey",
+});
+
+export const githubModelsModel = modelNode({
+  kind: "githubModelsModel",
+  name: "GitHub Models Chat Model",
+  icon: "github",
+  description: "Models from the GitHub Models catalog using a GitHub token.",
+  models: ["gpt-4o", "gpt-4o-mini", "Meta-Llama-3.1-405B-Instruct"],
+  baseUrl: "https://models.inference.ai.azure.com/chat/completions",
+  credentialType: "apiKey",
+});
+
+export const aimlapiModel = modelNode({
+  kind: "aimlapiModel",
+  name: "AI/ML API Chat Model",
+  icon: "cpu",
+  description: "Multi-provider catalogue through AI/ML API.",
+  models: ["gpt-4o", "claude-3-5-sonnet-20241022", "deepseek-chat"],
+  baseUrl: "https://api.aimlapi.com/v1/chat/completions",
+  credentialType: "apiKey",
+});
+
+export const qwenModel = modelNode({
+  kind: "qwenModel",
+  name: "Alibaba Qwen Chat Model",
+  icon: "alibabacloud",
+  description: "Qwen models on Alibaba DashScope (OpenAI-compatible mode).",
+  models: ["qwen-max", "qwen-plus", "qwen2.5-72b-instruct"],
+  baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+  credentialType: "apiKey",
+});
+
+export const customOpenAiCompatibleModel = modelNode({
+  kind: "customOpenAiCompatibleModel",
+  name: "Custom OpenAI-Compatible Model",
+  icon: "plug",
+  description: "Any OpenAI-compatible endpoint — vLLM, LM Studio, LiteLLM, self-hosted gateways.",
+  models: ["custom-model"],
+  baseUrl: "https://your-endpoint.example.com/v1/chat/completions",
+  credentialType: "apiKey",
+});
+
 export const model2Nodes: NodeModule[] = [
   googleModel,
   mistralModel,
@@ -173,5 +244,12 @@ export const model2Nodes: NodeModule[] = [
   moonshotModel,
   openAiCodexModel,
   zhipuModel,
+  nvidiaModel,
+  deepinfraModel,
+  sambanovaModel,
+  githubModelsModel,
+  aimlapiModel,
+  qwenModel,
+  customOpenAiCompatibleModel,
 ];
 

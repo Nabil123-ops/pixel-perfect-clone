@@ -3,8 +3,6 @@ import type { Json } from "@/lib/flow/types";
 import type { ChatMessage, ChatRequest, ChatResponse, SubNodeRef } from "@/lib/nodes/types";
 import { httpFetch } from "./http.server";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
 /** Provider config produced by an `ai_languageModel` sub-node. */
 export interface ModelConfig {
   provider: string;
@@ -25,24 +23,29 @@ export function modelConfigFrom(sub: SubNodeRef | undefined): ModelConfig | null
   return {
     provider,
     model: String(p['model'] ?? cfg['model'] ?? ""),
-    baseUrl: String(p['baseUrl'] || cfg['baseUrl'] || GATEWAY),
+    baseUrl: String(p['baseUrl'] || cfg['baseUrl'] || ""),
     apiKey: String(cred['apiKey'] ?? cred['token'] ?? ""),
     temperature: Number(p['temperature'] ?? 0.7),
     style: cfg['style'] === "anthropic" ? "anthropic" : "openai",
   };
 }
 
-/** Calls a chat model. Uses Lovable AI when the sub-node has no own credential. */
+/** Calls a chat model directly against the provider endpoint using its credential. */
 export async function callChat(cfg: ModelConfig, req: ChatRequest): Promise<ChatResponse> {
-  const useGateway = cfg.baseUrl === GATEWAY;
-  const key = useGateway ? (process.env['LOVABLE_API_KEY'] ?? "") : cfg.apiKey;
-  if (!key) throw new Error(`Missing API key for ${cfg.provider} — attach a credential`);
+  if (!cfg.baseUrl) {
+    throw new Error(
+      `No endpoint configured for ${cfg.provider} — set the model node's base URL`,
+    );
+  }
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(cfg.baseUrl);
+  const key = cfg.apiKey;
+  if (!key && !isLocal) throw new Error(`Missing API key for ${cfg.provider} — attach a credential`);
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (cfg.style === "anthropic") {
     headers["x-api-key"] = key;
     headers["anthropic-version"] = "2023-06-01";
-  } else {
+  } else if (key) {
     headers["Authorization"] = `Bearer ${key}`;
   }
 
@@ -51,7 +54,7 @@ export async function callChat(cfg: ModelConfig, req: ChatRequest): Promise<Chat
     messages: req.messages,
     temperature: req.temperature ?? cfg.temperature,
   };
-  if (cfg.model.startsWith("openai/gpt-5.6")) body['reasoning_effort'] = "none";
+  if (cfg.model.startsWith("gpt-5.6")) body['reasoning_effort'] = "none";
   if (req.tools?.length) {
     body['tools'] = req.tools.map((t) => ({
       type: "function",
