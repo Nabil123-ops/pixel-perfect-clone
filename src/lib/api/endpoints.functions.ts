@@ -1,14 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withWorkspace } from "@/integrations/supabase/workspace-middleware";
 
 /**
  * Returns the execution key for a workflow the caller owns.
  * The key authorises the public /api/public/exec/... endpoints.
  */
 export const getExecKey = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { workflowId: string }) =>
     z.object({ workflowId: z.string().uuid() }).parse(d),
   )

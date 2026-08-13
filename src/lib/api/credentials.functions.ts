@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withWorkspace } from "@/integrations/supabase/workspace-middleware";
 
 import type { Credential, CredentialType } from "@/lib/flow/types";
 
@@ -9,7 +9,7 @@ const typeEnum = z.enum(["apiKey", "bearer", "basicAuth", "oauth2", "webhookUrl"
 
 /** Credential values never leave the server in clear text — only masked previews. */
 export const listCredentials = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .handler(async ({ context }): Promise<Credential[]> => {
     const { decryptJson, maskValue } = await import("@/lib/crypto.server");
     const { data, error } = await context.supabase
@@ -37,7 +37,7 @@ export const listCredentials = createServerFn({ method: "GET" })
 );
 
 export const saveCredential = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator(
     (d: { id?: string; name: string; type: CredentialType; fields: Record<string, string> }) =>
       z
@@ -96,7 +96,7 @@ export const saveCredential = createServerFn({ method: "POST" })
   });
 
 export const deleteCredential = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -110,7 +110,7 @@ export const deleteCredential = createServerFn({ method: "POST" })
 
 /** Pings the credential's test endpoint using the stored secrets. */
 export const testCredential = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { decryptJson } = await import("@/lib/crypto.server");
@@ -164,7 +164,7 @@ export const testCredential = createServerFn({ method: "POST" })
 
 /** Step 1 of the OAuth2 authorization-code flow: build the consent URL. */
 export const startOauth = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string; redirectUri: string }) =>
     z.object({ id: z.string().uuid(), redirectUri: z.string().url() }).parse(d),
   )

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withWorkspace } from "@/integrations/supabase/workspace-middleware";
 
 export interface WebhookTestResult {
   url: string;
@@ -20,7 +20,7 @@ export interface WebhookTestResult {
  * response so the console can show exactly what an external caller sees.
  */
 export const sendWebhookTest = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator(
     (d: {
       url: string;

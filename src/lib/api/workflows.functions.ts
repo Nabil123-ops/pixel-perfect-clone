@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withWorkspace } from "@/integrations/supabase/workspace-middleware";
 
 import type { StoredEdge, StoredNode } from "@/lib/flow/types";
 
@@ -38,7 +38,7 @@ const saveSchema = z.object({
 });
 
 export const listWorkflows = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .handler(async ({ context }) => {
   const { data, error } = await context.supabase
     .from("workflows")
@@ -60,7 +60,7 @@ export const listWorkflows = createServerFn({ method: "GET" })
 });
 
 export const getWorkflow = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
@@ -84,7 +84,7 @@ export const getWorkflow = createServerFn({ method: "GET" })
   });
 
 export const saveWorkflow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: unknown) => saveSchema.parse(d))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
@@ -140,7 +140,7 @@ export const saveWorkflow = createServerFn({ method: "POST" })
   });
 
 export const setWorkflowActive = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string; active: boolean }) =>
     z.object({ id: z.string().uuid(), active: z.boolean() }).parse(d),
   )
@@ -155,7 +155,7 @@ export const setWorkflowActive = createServerFn({ method: "POST" })
   });
 
 export const deleteWorkflow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -168,7 +168,7 @@ export const deleteWorkflow = createServerFn({ method: "POST" })
   });
 
 export const listWorkflowVersions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
@@ -188,7 +188,7 @@ export const listWorkflowVersions = createServerFn({ method: "GET" })
   });
 
 export const restoreWorkflowVersion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { versionId: string }) =>
     z.object({ versionId: z.string().uuid() }).parse(d),
   )

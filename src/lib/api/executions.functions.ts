@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withWorkspace } from "@/integrations/supabase/workspace-middleware";
 
 import type { ExecutionSummary, Json, RunResult, RunStep } from "@/lib/flow/types";
 
 export const runWorkflowNow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { workflowId: string; trigger?: Json[]; startNodeId?: string }) =>
     z
       .object({
@@ -30,7 +30,7 @@ export const runWorkflowNow = createServerFn({ method: "POST" })
 
 /** Runs exactly one node with the current graph — the "Test this node" button. */
 export const runNodeNow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { workflowId: string; nodeId: string; trigger?: Json[] }) =>
     z
       .object({
@@ -54,7 +54,7 @@ export const runNodeNow = createServerFn({ method: "POST" })
   });
 
 export const listExecutions = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { workflowId?: string; limit?: number } | undefined) =>
     z
       .object({ workflowId: z.string().uuid().optional(), limit: z.number().max(200).optional() })
@@ -83,7 +83,7 @@ export const listExecutions = createServerFn({ method: "GET" })
   });
 
 export const getExecution = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<RunResult | null> => {
     const { data: run } = await context.supabase
@@ -126,7 +126,7 @@ export const getExecution = createServerFn({ method: "GET" })
   });
 
 export const deleteExecutions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withWorkspace])
   .inputValidator((d: { workflowId?: string }) =>
     z.object({ workflowId: z.string().uuid().optional() }).parse(d ?? {}),
   )
