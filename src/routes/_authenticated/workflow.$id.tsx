@@ -194,6 +194,7 @@ function EditorPage() {
           source: e.source,
           target: e.target,
           sourceHandle: e.sourceHandle ?? "main",
+          targetHandle: e.targetHandle ?? "main",
         })),
       };
       await save({ data: payload as never });

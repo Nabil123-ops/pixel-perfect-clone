@@ -82,10 +82,14 @@ export interface RunOptions {
 
 const isTriggerKind = (kind: string) => Boolean(getNode(kind)?.isTrigger);
 const isSubNodeKind = (kind: string) => Boolean(getNode(kind)?.subType);
-const connOf = (edge: StoredEdge): ConnType =>
-  ((edge.targetHandle as ConnType | undefined) ?? "main") === "main"
-    ? "main"
-    : (edge.targetHandle as ConnType);
+const connOf = (edge: StoredEdge): ConnType => {
+  const target = (edge.targetHandle as ConnType | undefined) ?? "main";
+  if (target !== "main") return target;
+  // Older saved graphs only stored the source handle; typed AI links are recoverable from it.
+  const source = edge.sourceHandle ?? "main";
+  if (source.startsWith("ai_")) return source as ConnType;
+  return "main";
+};
 
 /**
  * Root nodes (Agent, Chain, Vector store) declare required typed inputs.

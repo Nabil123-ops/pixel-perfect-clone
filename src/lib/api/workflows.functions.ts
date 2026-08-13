@@ -26,6 +26,7 @@ const edgeSchema = z.object({
   source: z.string(),
   target: z.string(),
   sourceHandle: z.string().nullish(),
+  targetHandle: z.string().nullish(),
 });
 
 const saveSchema = z.object({
