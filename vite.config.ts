@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Target Cloudflare Pages (NOT Workers): output goes to ./dist with a
+  // Pages-style `_worker.js` directory, `_routes.json`, `_headers`, `_redirects`.
+  nitro: {
+    preset: "cloudflare-pages",
+  },
 });

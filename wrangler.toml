@@ -1,0 +1,43 @@
+# Cloudflare PAGES configuration for n9n (omniflow hub).
+#
+# IMPORTANT — this is a Pages project, NOT a Workers project.
+#   * `pages_build_output_dir` is required, otherwise Cloudflare says
+#     "A Wrangler configuration file was found but it does not appear to be valid".
+#   * There must be NO `[assets]` block: the name `ASSETS` is reserved in Pages
+#     and makes the deploy fail with
+#     "The name 'ASSETS' is reserved in Pages projects".
+#   * `[[routes]]` (custom domains) and `[triggers]` (cron) are Workers-only.
+#     Custom domains are attached in the Pages dashboard, and the cron tick is
+#     driven by an external scheduler hitting /api/public/hooks/tick.
+#
+# Cloudflare Pages build settings:
+#   Build command:        npm run build
+#   Build output dir:     dist
+#
+# Secrets (Pages dashboard → Settings → Variables and Secrets, Production+Preview):
+#   APP_SUPABASE_SERVICE_ROLE_KEY
+#   CREDENTIAL_ENCRYPTION_KEY
+#   LOVABLE_API_KEY
+
+name = "n9n"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-08-13"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# --- Supabase (publishable / non-secret) ---
+APP_SUPABASE_URL = "https://ersfbxnrouwgnpzyvqed.supabase.co"
+APP_SUPABASE_PROJECT_ID = "ersfbxnrouwgnpzyvqed"
+VITE_APP_SUPABASE_URL = "https://ersfbxnrouwgnpzyvqed.supabase.co"
+VITE_APP_SUPABASE_PROJECT_ID = "ersfbxnrouwgnpzyvqed"
+
+# --- App ---
+APP_URL = "https://eweblb.com"
+NODE_ENV = "production"
+
+# --- Runtime limits (abuse protection) ---
+WEBHOOK_RATE_LIMIT_PER_MINUTE = "60"
+WEBHOOK_MAX_BODY_BYTES = "1048576"
+MAX_CONCURRENT_EXECUTIONS_PER_USER = "5"
+EXECUTION_TIMEOUT_MS = "120000"
+EXECUTION_LOG_RETENTION_DAYS = "30"

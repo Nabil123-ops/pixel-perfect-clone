@@ -10,33 +10,223 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenticated/credentials'
+import { Route as AuthenticatedExecutionsRouteImport } from './routes/_authenticated/executions'
+import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
+import { Route as AuthenticatedWorkflowsRouteImport } from './routes/_authenticated/workflows'
+import { Route as AuthenticatedWorkflowIdRouteImport } from './routes/_authenticated/workflow.$id'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as ApiPublicChatSplatRouteImport } from './routes/api/public/chat/$'
+import { Route as ApiPublicExecSplatRouteImport } from './routes/api/public/exec/$'
+import { Route as ApiPublicHooksTickRouteImport } from './routes/api/public/hooks/tick'
+import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
+import { Route as ApiPublicWebhookSplatRouteImport } from './routes/api/public/webhook.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCredentialsRoute =
+  AuthenticatedCredentialsRouteImport.update({
+    id: '/credentials',
+    path: '/credentials',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedExecutionsRoute = AuthenticatedExecutionsRouteImport.update({
+  id: '/executions',
+  path: '/executions',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTemplatesRoute = AuthenticatedTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWorkflowsRoute = AuthenticatedWorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWorkflowIdRoute = AuthenticatedWorkflowIdRouteImport.update({
+  id: '/workflow/$id',
+  path: '/workflow/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicChatSplatRoute = ApiPublicChatSplatRouteImport.update({
+  id: '/api/public/chat/$',
+  path: '/api/public/chat/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicExecSplatRoute = ApiPublicExecSplatRouteImport.update({
+  id: '/api/public/exec/$',
+  path: '/api/public/exec/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksTickRoute = ApiPublicHooksTickRouteImport.update({
+  id: '/api/public/hooks/tick',
+  path: '/api/public/hooks/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOauthCallbackRoute = ApiPublicOauthCallbackRouteImport.update({
+  id: '/api/public/oauth/callback',
+  path: '/api/public/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWebhookSplatRoute = ApiPublicWebhookSplatRouteImport.update({
+  id: '/api/public/webhook/$',
+  path: '/api/public/webhook/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/credentials': typeof AuthenticatedCredentialsRoute
+  '/executions': typeof AuthenticatedExecutionsRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
+  '/workflows': typeof AuthenticatedWorkflowsRoute
+  '/workflow/$id': typeof AuthenticatedWorkflowIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/chat/$': typeof ApiPublicChatSplatRoute
+  '/api/public/exec/$': typeof ApiPublicExecSplatRoute
+  '/api/public/hooks/tick': typeof ApiPublicHooksTickRoute
+  '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
+  '/api/public/webhook/$': typeof ApiPublicWebhookSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/credentials': typeof AuthenticatedCredentialsRoute
+  '/executions': typeof AuthenticatedExecutionsRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
+  '/workflows': typeof AuthenticatedWorkflowsRoute
+  '/workflow/$id': typeof AuthenticatedWorkflowIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/chat/$': typeof ApiPublicChatSplatRoute
+  '/api/public/exec/$': typeof ApiPublicExecSplatRoute
+  '/api/public/hooks/tick': typeof ApiPublicHooksTickRoute
+  '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
+  '/api/public/webhook/$': typeof ApiPublicWebhookSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/_authenticated/credentials': typeof AuthenticatedCredentialsRoute
+  '/_authenticated/executions': typeof AuthenticatedExecutionsRoute
+  '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
+  '/_authenticated/workflows': typeof AuthenticatedWorkflowsRoute
+  '/_authenticated/workflow/$id': typeof AuthenticatedWorkflowIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/chat/$': typeof ApiPublicChatSplatRoute
+  '/api/public/exec/$': typeof ApiPublicExecSplatRoute
+  '/api/public/hooks/tick': typeof ApiPublicHooksTickRoute
+  '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
+  '/api/public/webhook/$': typeof ApiPublicWebhookSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/privacy'
+    | '/terms'
+    | '/credentials'
+    | '/executions'
+    | '/templates'
+    | '/workflows'
+    | '/workflow/$id'
+    | '/api/public/health'
+    | '/api/public/chat/$'
+    | '/api/public/exec/$'
+    | '/api/public/hooks/tick'
+    | '/api/public/oauth/callback'
+    | '/api/public/webhook/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/privacy'
+    | '/terms'
+    | '/credentials'
+    | '/executions'
+    | '/templates'
+    | '/workflows'
+    | '/workflow/$id'
+    | '/api/public/health'
+    | '/api/public/chat/$'
+    | '/api/public/exec/$'
+    | '/api/public/hooks/tick'
+    | '/api/public/oauth/callback'
+    | '/api/public/webhook/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/privacy'
+    | '/terms'
+    | '/_authenticated/credentials'
+    | '/_authenticated/executions'
+    | '/_authenticated/templates'
+    | '/_authenticated/workflows'
+    | '/_authenticated/workflow/$id'
+    | '/api/public/health'
+    | '/api/public/chat/$'
+    | '/api/public/exec/$'
+    | '/api/public/hooks/tick'
+    | '/api/public/oauth/callback'
+    | '/api/public/webhook/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicChatSplatRoute: typeof ApiPublicChatSplatRoute
+  ApiPublicExecSplatRoute: typeof ApiPublicExecSplatRoute
+  ApiPublicHooksTickRoute: typeof ApiPublicHooksTickRoute
+  ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
+  ApiPublicWebhookSplatRoute: typeof ApiPublicWebhookSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +238,145 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/credentials': {
+      id: '/_authenticated/credentials'
+      path: '/credentials'
+      fullPath: '/credentials'
+      preLoaderRoute: typeof AuthenticatedCredentialsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/executions': {
+      id: '/_authenticated/executions'
+      path: '/executions'
+      fullPath: '/executions'
+      preLoaderRoute: typeof AuthenticatedExecutionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/templates': {
+      id: '/_authenticated/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AuthenticatedTemplatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/workflows': {
+      id: '/_authenticated/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof AuthenticatedWorkflowsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/workflow/$id': {
+      id: '/_authenticated/workflow/$id'
+      path: '/workflow/$id'
+      fullPath: '/workflow/$id'
+      preLoaderRoute: typeof AuthenticatedWorkflowIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/chat/$': {
+      id: '/api/public/chat/$'
+      path: '/api/public/chat/$'
+      fullPath: '/api/public/chat/$'
+      preLoaderRoute: typeof ApiPublicChatSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/exec/$': {
+      id: '/api/public/exec/$'
+      path: '/api/public/exec/$'
+      fullPath: '/api/public/exec/$'
+      preLoaderRoute: typeof ApiPublicExecSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/tick': {
+      id: '/api/public/hooks/tick'
+      path: '/api/public/hooks/tick'
+      fullPath: '/api/public/hooks/tick'
+      preLoaderRoute: typeof ApiPublicHooksTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/oauth/callback': {
+      id: '/api/public/oauth/callback'
+      path: '/api/public/oauth/callback'
+      fullPath: '/api/public/oauth/callback'
+      preLoaderRoute: typeof ApiPublicOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhook/$': {
+      id: '/api/public/webhook/$'
+      path: '/api/public/webhook/$'
+      fullPath: '/api/public/webhook/$'
+      preLoaderRoute: typeof ApiPublicWebhookSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCredentialsRoute: typeof AuthenticatedCredentialsRoute
+  AuthenticatedExecutionsRoute: typeof AuthenticatedExecutionsRoute
+  AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
+  AuthenticatedWorkflowsRoute: typeof AuthenticatedWorkflowsRoute
+  AuthenticatedWorkflowIdRoute: typeof AuthenticatedWorkflowIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCredentialsRoute: AuthenticatedCredentialsRoute,
+  AuthenticatedExecutionsRoute: AuthenticatedExecutionsRoute,
+  AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
+  AuthenticatedWorkflowsRoute: AuthenticatedWorkflowsRoute,
+  AuthenticatedWorkflowIdRoute: AuthenticatedWorkflowIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicChatSplatRoute: ApiPublicChatSplatRoute,
+  ApiPublicExecSplatRoute: ApiPublicExecSplatRoute,
+  ApiPublicHooksTickRoute: ApiPublicHooksTickRoute,
+  ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
+  ApiPublicWebhookSplatRoute: ApiPublicWebhookSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
