@@ -442,13 +442,18 @@ export const TEMPLATES: Template[] = [
         },
       },
       {
-        kind: "lovableModel",
-        label: "Router Model (built-in AI — no key)",
+        kind: "xaiModel",
+        label: "Grok — Realtime Routing",
         pos: { x: 920, y: 760 },
         params: {
-          model: "google/gemini-2.5-flash",
+          model: "grok-4",
           temperature: 0.4,
           baseUrl: "",
+          __config: {
+            provider: "xaiModel",
+            style: "openai",
+            baseUrl: "https://api.x.ai/v1/chat/completions",
+          },
         },
       },
     ],
