@@ -1,8 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, User, LayoutTemplate, KeyRound, Activity, Zap, Infinity as InfinityIcon, LogOut } from "lucide-react";
+import { Home, User, LayoutTemplate, KeyRound, Activity, Zap, Infinity as InfinityIcon } from "lucide-react";
 import type { ReactNode } from "react";
-
-import { useAuth } from "@/hooks/useAuth";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Home },
@@ -14,7 +12,6 @@ const NAV = [
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, signOut } = useAuth();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
@@ -60,29 +57,6 @@ export function Shell({ children }: { children: ReactNode }) {
               Unlimited workflows, executions, active triggers and credentials. Forever.
             </p>
           </div>
-          {user ? (
-            <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-2">
-              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary text-[10px] font-semibold uppercase text-secondary-foreground">
-                {(user.email ?? "?").slice(0, 1)}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-                {user.email}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  void signOut().then(() => {
-                    window.location.href = "/auth";
-                  });
-                }}
-                aria-label="Sign out"
-                title="Sign out"
-                className="rounded p-1 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-              >
-                <LogOut className="size-3.5" />
-              </button>
-            </div>
-          ) : null}
           <p className="px-1 text-[10px] text-muted-foreground">Runs on the server — triggers keep firing after you close the tab.</p>
           <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
             Created with <span className="text-destructive">♥</span> by Nabil Dahdouh
