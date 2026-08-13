@@ -1,0 +1,62 @@
+/**
+ * Single source of truth for every public URL the app exposes.
+ * Client-safe: no secrets, no server-only imports.
+ */
+
+/** Production origin — the live domain the published app is served from. */
+export const PRODUCTION_ORIGIN = "https://eweblb.com";
+
+/** Origin of the environment the editor is currently open in (preview/dev/local). */
+export function testOrigin(): string {
+  return typeof window !== "undefined" ? window.location.origin : PRODUCTION_ORIGIN;
+}
+
+export type Env = "test" | "production";
+
+export function originFor(env: Env): string {
+  return env === "production" ? PRODUCTION_ORIGIN : testOrigin();
+}
+
+/** Execution endpoint for a whole workflow, or for one single node/trigger. */
+export function execPath(workflowId: string, nodeId?: string): string {
+  return `/api/public/exec/${workflowId}${nodeId ? `/${encodeURIComponent(nodeId)}` : ""}`;
+}
+
+export function execUrl(
+  env: Env,
+  workflowId: string,
+  key: string,
+  nodeId?: string,
+): string {
+  const query = key ? `?key=${encodeURIComponent(key)}` : "";
+  return `${originFor(env)}${execPath(workflowId, nodeId)}${query}`;
+}
+
+/** Public webhook endpoint of a webhook trigger node. */
+export function webhookUrl(env: Env, workflowId: string, path: string): string {
+  return `${originFor(env)}/api/public/webhook/${workflowId}/${String(path).replace(/^\/+/, "")}`;
+}
+
+/** Public chat endpoint of a chat trigger node. */
+export function chatUrl(env: Env, workflowId: string): string {
+  return `${originFor(env)}/api/public/chat/${workflowId}`;
+}
+
+/** Shareable link that opens one execution in the Executions page. */
+export function executionLink(env: Env, executionId: string): string {
+  return `${originFor(env)}/executions?run=${executionId}`;
+}
+
+export function curlFor(
+  url: string,
+  method = "POST",
+  body?: string,
+  headers: Record<string, string> = {},
+): string {
+  const all = { "content-type": "application/json", ...headers };
+  return [
+    `curl -i -X ${method} '${url}' \\`,
+    ...Object.entries(all).map(([k, v]) => `  -H '${k}: ${v}' \\`),
+    body ? `  -d '${body.replace(/\n\s*/g, "")}'` : `  -d '{}'`,
+  ].join("\n");
+}
