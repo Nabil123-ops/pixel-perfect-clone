@@ -25,7 +25,6 @@ compatibility_date = "2026-08-13"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-CREDENTIAL_ENCRYPTION_KEY = "991bdd09250718058d7e8e9a47d9821c12e9a3ab5ea4f9e0fc6b938510156436"
 # --- Supabase (publishable / non-secret) ---
 APP_SUPABASE_URL = "https://ersfbxnrouwgnpzyvqed.supabase.co"
 APP_SUPABASE_PROJECT_ID = "ersfbxnrouwgnpzyvqed"
