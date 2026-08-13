@@ -1,20 +1,67 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+/**
+ * Vite config for n9n — TanStack Start + Nitro targeting **Cloudflare Pages**.
+ *
+ * The Lovable sandbox wrapper (`@lovable.dev/vite-tanstack-config`) is used when
+ * it is installed (local/Lovable dev). On external CI such as Cloudflare Pages the
+ * package may not be installed at all — in that case we fall back to an equivalent
+ * plain-Vite config so `npm run build` never fails with UNRESOLVED_IMPORT.
+ */
+import type { UserConfig } from "vite";
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-  // Target Cloudflare Pages (NOT Workers): output goes to ./dist with a
-  // Pages-style `_worker.js` directory, `_routes.json`, `_headers`, `_redirects`.
-  nitro: {
-    preset: "cloudflare-pages",
-  },
-});
+const tanstackStartOptions = {
+  // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+  server: { entry: "server" },
+} as const;
+
+const nitroOptions = {
+  // Cloudflare PAGES (not Workers): ./dist with `_worker.js/`, `_routes.json`, `_headers`.
+  preset: "cloudflare-pages",
+} as const;
+
+async function loadLovableConfig(): Promise<UserConfig | undefined> {
+  try {
+    const mod = await import(
+      /* @vite-ignore */ "@lovable.dev/vite-tanstack-config"
+    );
+    return mod.defineConfig({
+      tanstackStart: tanstackStartOptions,
+      nitro: nitroOptions,
+    }) as unknown as UserConfig;
+  } catch {
+    return undefined;
+  }
+}
+
+async function standaloneConfig(command: string): Promise<UserConfig> {
+  const { tanstackStart } = await import("@tanstack/react-start/plugin/vite");
+  const viteReact = (await import("@vitejs/plugin-react")).default;
+  const tailwindcss = (await import("@tailwindcss/vite")).default;
+  const tsConfigPaths = (await import("vite-tsconfig-paths")).default;
+
+  const plugins: any[] = [
+    tsConfigPaths({ projects: ["./tsconfig.json"] }),
+    tailwindcss(),
+    tanstackStart(tanstackStartOptions as any),
+  ];
+
+  if (command === "build") {
+    const { nitro } = await import("nitro/vite");
+    plugins.push(nitro(nitroOptions as any));
+  }
+
+  plugins.push(viteReact());
+
+  return {
+    plugins,
+    server: { host: "::", port: 8080 },
+    resolve: {
+      dedupe: ["react", "react-dom", "@tanstack/react-router", "@tanstack/react-query"],
+    },
+  };
+}
+
+export default async ({ command }: { command: string }): Promise<UserConfig> => {
+  const lovable = await loadLovableConfig();
+  if (lovable) return lovable;
+  return standaloneConfig(command);
+};
