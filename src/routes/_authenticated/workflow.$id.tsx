@@ -132,6 +132,8 @@ function EditorPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showEndpoints, setShowEndpoints] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [dockOpen, setDockOpen] = useState(true);
+  const [dockTab, setDockTab] = useState<"run" | "urls" | "request" | "versions">("run");
   const runningRef = useRef(false);
 
   const { data: flow } = useQuery({
