@@ -17,7 +17,18 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, History, Link2, Play, Plus, Save, Search, User } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  History,
+  Link2,
+  Play,
+  Plus,
+  Save,
+  Search,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Shell } from "@/components/Shell";
