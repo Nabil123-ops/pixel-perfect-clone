@@ -19,6 +19,7 @@ const nitroOptions = {
 } as const;
 
 async function loadLovableConfig(env: any): Promise<UserConfig | undefined> {
+  if (process.env["CF_PAGES"] || process.env["SKIP_LOVABLE_VITE_CONFIG"]) return undefined;
   try {
     const mod = await import(
       /* @vite-ignore */ "@lovable.dev/vite-tanstack-config"
