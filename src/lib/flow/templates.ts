@@ -441,9 +441,20 @@ export const TEMPLATES: Template[] = [
           secret: "",
         },
       },
+      {
+        kind: "lovableModel",
+        label: "Router Model (built-in AI — no key)",
+        pos: { x: 920, y: 760 },
+        params: {
+          model: "google/gemini-2.5-flash",
+          temperature: 0.4,
+          baseUrl: "",
+        },
+      },
     ],
     links: [
       { from: 0, to: 1 },
+      { from: 14, to: 1, sourceHandle: "ai_languageModel", targetHandle: "ai_languageModel" },
       { from: 11, to: 1, sourceHandle: "ai_languageModel", targetHandle: "ai_languageModel" },
       { from: 12, to: 1, sourceHandle: "ai_languageModel", targetHandle: "ai_languageModel" },
       { from: 13, to: 1 },
