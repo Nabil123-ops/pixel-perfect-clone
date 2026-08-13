@@ -86,15 +86,6 @@ export const openAiEmbeddings = embeddingNode({
   description: "Create OpenAI embedding vectors for text.",
 });
 
-export const lovableEmbeddings = embeddingNode({
-  kind: "lovableEmbeddings",
-  name: "Gateway Embeddings",
-  icon: "sparkles",
-  url: "https://ai.gateway.lovable.dev/v1/embeddings",
-  models: ["openai/text-embedding-3-small", "openai/text-embedding-3-large"],
-  description: "Embeddings through the built-in AI gateway.",
-});
-
 export const mistralEmbeddings = embeddingNode({
   kind: "mistralEmbeddings",
   name: "Mistral Embeddings",
@@ -649,7 +640,6 @@ export const reranker: NodeModule = {
 export const retrievalNodes: NodeModule[] = [
   textSplitter,
   openAiEmbeddings,
-  lovableEmbeddings,
   cohereEmbeddings,
   mistralEmbeddings,
   voyageEmbeddings,

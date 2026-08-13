@@ -41,20 +41,6 @@ export function modelNode(opts: {
   };
 }
 
-export const lovableModel = modelNode({
-  kind: "lovableModel",
-  name: "Lovable AI Model",
-  icon: "sparkles",
-  description: "Gemini and GPT models through the built-in AI gateway — no key needed.",
-  models: [
-    "google/gemini-3-pro-preview",
-    "google/gemini-2.5-flash",
-    "google/gemini-2.5-flash-lite",
-    "openai/gpt-5.6",
-    "openai/gpt-5-mini",
-  ],
-});
-
 export const openAiModel = modelNode({
   kind: "openAiModel",
   name: "OpenAI ChatGPT Model",
@@ -455,7 +441,6 @@ export const textClassifier: NodeModule = {
 };
 
 export const aiNodes = [
-  lovableModel,
   openAiModel,
   anthropicModel,
   groqModel,
