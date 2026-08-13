@@ -18,15 +18,17 @@ const nitroOptions = {
   preset: "cloudflare-pages",
 } as const;
 
-async function loadLovableConfig(): Promise<UserConfig | undefined> {
+async function loadLovableConfig(env: any): Promise<UserConfig | undefined> {
   try {
     const mod = await import(
       /* @vite-ignore */ "@lovable.dev/vite-tanstack-config"
     );
-    return mod.defineConfig({
+    const cfg = mod.defineConfig({
       tanstackStart: tanstackStartOptions,
       nitro: nitroOptions,
-    }) as unknown as UserConfig;
+    }) as unknown;
+    const resolved = typeof cfg === "function" ? await (cfg as any)(env) : await cfg;
+    return resolved as UserConfig;
   } catch {
     return undefined;
   }
@@ -60,8 +62,8 @@ async function standaloneConfig(command: string): Promise<UserConfig> {
   };
 }
 
-export default async ({ command }: { command: string }): Promise<UserConfig> => {
-  const lovable = await loadLovableConfig();
+export default async (env: { command: string; mode: string }): Promise<UserConfig> => {
+  const lovable = await loadLovableConfig(env);
   if (lovable) return lovable;
-  return standaloneConfig(command);
+  return standaloneConfig(env.command);
 };
