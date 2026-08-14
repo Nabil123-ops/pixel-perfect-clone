@@ -207,6 +207,20 @@ export async function runWorkflow(options: RunOptions): Promise<RunResult> {
         .filter((n) => !isSubNodeKind(n.data.kind) && (mainIncoming.get(n.id) ?? []).length === 0)
         .map((n) => n.id);
 
+  /** Names of every credential attached to a node — new `credentials[]` first, falling back to the legacy single `credential`. */
+  const credentialNamesFor = (data: StoredNode["data"]): string[] =>
+    data.credentials?.length ? data.credentials : data.credential ? [data.credential] : [];
+
+  /** Resolve attached credential names into `{ merged, byName }`, decrypted via `byName` (the account-wide map). */
+  const resolveCredentials = (
+    names: string[],
+  ): { merged: Record<string, string>; byName: Record<string, Record<string, string>> } => {
+    const map: Record<string, Record<string, string>> = {};
+    for (const name of names) map[name] = byName[name] ?? {};
+    const merged = Object.assign({}, ...names.map((n) => map[n] ?? {})) as Record<string, string>;
+    return { merged, byName: map };
+  };
+
   const ready = (nodeId: string) =>
     Boolean(options.onlyNodeId) ||
     (mainIncoming.get(nodeId) ?? []).every((e) => done.has(e.source) || !byNodeId.has(e.source));
@@ -220,12 +234,13 @@ export async function runWorkflow(options: RunOptions): Promise<RunResult> {
       const source = byNodeId.get(edge.source);
       const sourceMod = source && getNode(source.data.kind);
       if (!source || !sourceMod) continue;
+      const sourceCreds = resolveCredentials(credentialNamesFor(source.data));
       const ref: SubNodeRef = {
         kind: source.data.kind,
         label: source.data.label || sourceMod.name,
         params: source.data.params ?? {},
-        credential:
-          (source.data.credential ? byName[source.data.credential] : undefined) ?? {},
+        credential: sourceCreds.merged,
+        credentials: sourceCreds.byName,
         invoke: async (items) => {
           const result = await sourceMod.execute(makeContext(source, items, []));
           return result?.['main'] ?? Object.values(result ?? {})[0] ?? [];
@@ -239,10 +254,12 @@ export async function runWorkflow(options: RunOptions): Promise<RunResult> {
   /** Build the execution context handed to a node module. */
   function makeContext(node: StoredNode, input: Json[], logs: string[]) {
     const subNodes = subNodesFor(node.id);
+    const nodeCreds = resolveCredentials(credentialNamesFor(node.data));
     return {
       items: input,
       params: node.data.params ?? {},
-      credential: (node.data.credential ? byName[node.data.credential] : undefined) ?? {},
+      credential: nodeCreds.merged,
+      credentials: nodeCreds.byName,
       creds: byName,
       trigger,
       nodeOutputs,
