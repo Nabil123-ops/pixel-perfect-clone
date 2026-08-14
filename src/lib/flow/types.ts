@@ -11,8 +11,10 @@ export interface FlowNodeData {
   retries?: number;
   /** "stop" halts the branch, "continue" passes input through on error. */
   onError?: "stop" | "continue";
-  /** Credential name used by this node. */
+  /** Credential name used by this node. @deprecated kept for back-compat — first entry of `credentials`. */
   credential?: string;
+  /** Every credential attached to this node — lets one node call many APIs at once. */
+  credentials?: string[];
   /** Pinned output — when set the node returns this instead of executing. */
   pinned?: string;
 }
