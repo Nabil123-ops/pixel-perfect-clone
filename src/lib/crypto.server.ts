@@ -8,9 +8,18 @@ async function keyFor(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
+/**
+ * Encryption key for credentials at rest.
+ * Uses CREDENTIAL_ENCRYPTION_KEY when configured; otherwise derives a stable
+ * key from the service-role key so the app never hard-fails on a host where
+ * the extra variable was not set (Cloudflare Pages, self-hosting, ...).
+ */
 function secret(): string {
-  const value = process.env["CREDENTIAL_ENCRYPTION_KEY"];
-  if (!value) throw new Error("CREDENTIAL_ENCRYPTION_KEY is not configured");
+  const value =
+    process.env["CREDENTIAL_ENCRYPTION_KEY"] ||
+    process.env["APP_SUPABASE_SERVICE_ROLE_KEY"] ||
+    process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!value) throw new Error("No encryption key available on this server");
   return value;
 }
 
