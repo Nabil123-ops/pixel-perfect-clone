@@ -2,12 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { Copy, Plus, Search, Trash2, Workflow as WorkflowIcon } from "lucide-react";
+import { Copy, Plus, Search, Sparkles, Trash2, Workflow as WorkflowIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader, Shell } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CreateWithAIDialog } from "@/components/CreateWithAIDialog";
 import {
   deleteWorkflow,
   listWorkflows,
@@ -89,6 +90,17 @@ function WorkflowsPage() {
             <Button size="sm" onClick={() => void create()}>
               <Plus className="mr-1.5 size-4" /> Create workflow
             </Button>
+            <CreateWithAIDialog
+              trigger={
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-br from-primary to-accent text-primary-foreground hover:opacity-90"
+                >
+                  <Sparkles className="mr-1.5 size-4" /> Create with AI
+                </Button>
+              }
+              onCreated={(id) => void navigate({ to: "/workflow/$id", params: { id } })}
+            />
           </div>
         }
       />
