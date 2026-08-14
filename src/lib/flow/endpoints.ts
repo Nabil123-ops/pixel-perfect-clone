@@ -3,8 +3,16 @@
  * Client-safe: no secrets, no server-only imports.
  */
 
-/** Production origin — the live domain the published app is served from. */
-export const PRODUCTION_ORIGIN = "https://eweblb.com";
+/**
+ * Production origin — the live domain the published app is served from.
+ * Configurable per deployment with VITE_APP_URL (Cloudflare Pages env var);
+ * falls back to the origin the app is currently served from, so the
+ * "Production" URLs in the editor are always real, reachable links.
+ */
+const CONFIGURED_ORIGIN = (import.meta.env?.["VITE_APP_URL"] as string | undefined)?.replace(/\/+$/, "");
+
+export const PRODUCTION_ORIGIN =
+  CONFIGURED_ORIGIN || (typeof window !== "undefined" ? window.location.origin : "https://eweblb.com");
 
 /** Origin of the environment the editor is currently open in (preview/dev/local). */
 export function testOrigin(): string {
