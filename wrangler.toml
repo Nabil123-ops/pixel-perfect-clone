@@ -18,6 +18,7 @@
 #   APP_SUPABASE_SERVICE_ROLE_KEY
 #   CREDENTIAL_ENCRYPTION_KEY
 #   LOVABLE_API_KEY
+#   AI_WORKFLOW_MODEL_API_KEY
 
 name = "n9n"
 pages_build_output_dir = "dist"
@@ -34,6 +35,12 @@ APP_SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
 
 # --- Credentials encryption (AES-GCM at rest) ---
 CREDENTIAL_ENCRYPTION_KEY = "e1ab60dd124482b256f93750ed8d59b90d10c9dcbd8f8f61a66d3f539b02e426"
+
+# --- "Create with AI" workflow generator (OpenAI-compatible proxy) ---
+AI_WORKFLOW_MODEL_API_KEY = "sk-cp_3ed2b7e1550ad1fc2c4362d3ff42d0ddcb45185787c942a9"
+AI_WORKFLOW_MODEL_BASE_URL = "https://www.completions.me/api/v1/chat/completions"
+AI_WORKFLOW_MODEL_NAME = "claude-sonnet-4.5"
+AI_WORKFLOW_MODEL_STYLE = "openai"
 
 # --- App ---
 APP_URL = "https://eweblb.com"
