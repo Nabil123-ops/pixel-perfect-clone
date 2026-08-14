@@ -3,6 +3,7 @@ import { Home, User, LayoutTemplate, KeyRound, Activity, Infinity as InfinityIco
 import { useEffect, useState, type ReactNode } from "react";
 
 import { accountLabel, currentHandle } from "@/lib/account";
+import { AskAIPanel } from "@/components/AskAIPanel";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Home },
@@ -85,6 +86,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
+      <AskAIPanel />
     </div>
   );
 }
