@@ -16,6 +16,7 @@ const nodeSchema = z.object({
       retries: z.number().optional(),
       onError: z.enum(["stop", "continue"]).optional(),
       credential: z.string().optional(),
+      credentials: z.array(z.string()).optional(),
       pinned: z.string().optional(),
     })
     .passthrough(),
