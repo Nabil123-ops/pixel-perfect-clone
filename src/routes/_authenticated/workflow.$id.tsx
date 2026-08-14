@@ -98,6 +98,7 @@ const toStored = (n: Node): StoredNode => {
       ...(d.retries !== undefined ? { retries: d.retries } : {}),
       ...(d.onError ? { onError: d.onError } : {}),
       ...(d.credential ? { credential: d.credential } : {}),
+      ...(d.credentials?.length ? { credentials: d.credentials } : {}),
       ...(d.pinned ? { pinned: d.pinned } : {}),
     },
   };
