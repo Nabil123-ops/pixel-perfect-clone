@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, User, LayoutTemplate, KeyRound, Activity, Zap, Infinity as InfinityIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { Home, User, LayoutTemplate, KeyRound, Activity, Infinity as InfinityIcon, LogIn } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+
+import { accountLabel, currentHandle } from "@/lib/account";
 
 const NAV = [
   { to: "/", label: "Overview", icon: Home },
@@ -17,9 +19,13 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <aside className="flex w-[224px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
         <Link to="/" className="flex items-center gap-2.5 px-4 py-4">
-          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <Zap className="size-4" />
-          </span>
+          <img
+            src="/logo.png"
+            alt="n9n logo"
+            width={32}
+            height={32}
+            className="size-8 shrink-0 object-contain"
+          />
           <span className="min-w-0">
             <span className="block font-display text-base font-bold leading-none tracking-tight">n9n</span>
             <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
