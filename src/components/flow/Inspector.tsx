@@ -1,6 +1,12 @@
-import { Play, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { KeyRound, Play, Plus, X } from "lucide-react";
 import { specOf } from "@/lib/flow/catalog";
+import { credentialTypeSpec } from "@/lib/flow/credentials";
 import type { StoredNode } from "@/lib/flow/types";
+import { listCredentials } from "@/lib/api/credentials.functions";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +40,28 @@ export function Inspector({
 
   const setParam = (key: string, value: unknown) =>
     onChange({ params: { ...node.data.params, [key]: value } });
+
+  const listCreds = useServerFn(listCredentials);
+  const { data: allCredentials = [] } = useQuery({
+    queryKey: ["credentials"],
+    queryFn: () => listCreds(),
+  });
+
+  const attachedNames =
+    node.data.credentials?.length ? node.data.credentials : node.data.credential ? [node.data.credential] : [];
+  const availableToAdd = allCredentials.filter((c) => !attachedNames.includes(c.name));
+
+  const setCredentials = (names: string[]) =>
+    onChange({
+      credentials: names,
+      ...(names.length ? { credential: names[0] } : { credential: undefined }),
+    });
+  const addCredential = (name: string) => {
+    if (!name || attachedNames.includes(name)) return;
+    setCredentials([...attachedNames, name]);
+  };
+  const removeCredential = (name: string) =>
+    setCredentials(attachedNames.filter((n) => n !== name));
 
   return (
     <aside className="ff-panel flex w-[340px] shrink-0 flex-col overflow-hidden rounded-none border-y-0 border-r-0">
@@ -77,6 +105,67 @@ export function Inspector({
             value={node.data.label}
             onChange={(e) => onChange({ label: e.target.value })}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <Hint
+            text="Attach as many stored credentials as this node needs. Their fields are merged for built-in auth, and every attached credential is also reachable individually as {{ $cred.Name.key }}."
+            side="left"
+          >
+            <Label className="cursor-help">Credentials</Label>
+          </Hint>
+
+          {attachedNames.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {attachedNames.map((name) => {
+                const cred = allCredentials.find((c) => c.name === name);
+                return (
+                  <Badge key={name} variant="secondary" className="gap-1.5 py-1 pl-2 pr-1">
+                    <KeyRound className="size-3" />
+                    {name}
+                    {cred && (
+                      <span className="text-muted-foreground">· {credentialTypeSpec(cred.type).name}</span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${name}`}
+                      onClick={() => removeCredential(name)}
+                      className="ml-0.5 rounded-sm hover:bg-muted-foreground/20"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+
+          {availableToAdd.length > 0 ? (
+            <div className="flex items-center gap-1.5">
+              <select
+                title="Add a credential"
+                value=""
+                onChange={(e) => addCredential(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+              >
+                <option value="" disabled>
+                  {attachedNames.length ? "Add another credential…" : "Attach a credential…"}
+                </option>
+                {availableToAdd.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name} · {credentialTypeSpec(c.type).name}
+                  </option>
+                ))}
+              </select>
+              <Plus className="size-4 shrink-0 text-muted-foreground" />
+            </div>
+          ) : (
+            allCredentials.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No credentials saved yet. <Link to="/credentials" className="underline">Add one</Link>.
+              </p>
+            )
+          )}
         </div>
 
         {spec.fields.map((field) => (
