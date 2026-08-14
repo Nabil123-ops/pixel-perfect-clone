@@ -1,21 +1,33 @@
 import { createMiddleware } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
+
+import { readHandleCookie } from "@/lib/account";
 
 /**
- * Open-access server context.
+ * Account context for every server function.
  *
- * The product has no sign-in: server functions run against the shared
- * workspace account with the service-role client, so saving workflows,
- * credentials, executions and settings works for everyone out of the box.
+ * Password-less accounts: the `n9n_handle` cookie identifies the visitor and
+ * is mapped server-side to a persistent account. Anonymous visitors share the
+ * default workspace account, so nothing ever fails for lack of a session.
  */
 export const withWorkspace = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { workspaceUserId } = await import("@/lib/workspace.server");
-  const userId = await workspaceUserId();
+  const { accountUserId } = await import("@/lib/workspace.server");
+
+  let handle: string | null = null;
+  try {
+    handle = readHandleCookie(getRequestHeader("cookie"));
+  } catch {
+    handle = null;
+  }
+
+  const userId = await accountUserId(handle);
 
   return next({
     context: {
       supabase: supabaseAdmin,
       userId,
+      handle,
       claims: { sub: userId } as Record<string, unknown>,
     },
   });
