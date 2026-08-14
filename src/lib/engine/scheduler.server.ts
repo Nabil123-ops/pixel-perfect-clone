@@ -104,6 +104,16 @@ export async function tickTriggers(now = new Date()): Promise<TickResult> {
       if (lastRun && now.getTime() - lastRun.getTime() < minutes * 60_000 - 5_000) continue;
 
       const { byName } = await loadCredentialMap();
+      const credNames = node.data.credentials?.length
+        ? node.data.credentials
+        : node.data.credential
+          ? [node.data.credential]
+          : [];
+      const credsByName = Object.fromEntries(credNames.map((n) => [n, byName[n] ?? {}]));
+      const mergedCredential = Object.assign({}, ...credNames.map((n) => credsByName[n] ?? {})) as Record<
+        string,
+        string
+      >;
       const seen = ((stateRow?.seen as string[] | null) ?? []).slice(-500);
       let items: Json[] = [];
       let nextSeen = seen;
@@ -111,7 +121,8 @@ export async function tickTriggers(now = new Date()): Promise<TickResult> {
         const polled = await mod.poll({
           items: [],
           params,
-          credential: (node.data.credential ? byName[node.data.credential] : undefined) ?? {},
+          credential: mergedCredential,
+          credentials: credsByName,
           creds: byName,
           trigger: [],
           nodeOutputs: {},
