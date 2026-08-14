@@ -32,8 +32,12 @@ VITE_APP_SUPABASE_URL = "https://ersfbxnrouwgnpzyvqed.supabase.co"
 VITE_APP_SUPABASE_PROJECT_ID = "ersfbxnrouwgnpzyvqed"
 APP_SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyc2ZieG5yb3V3Z25wenl2cWVkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjIwNjk4NiwiZXhwIjoyMTAxNzgyOTg2fQ.eEJ4FRksy_08-pFPLbRrSgWUeyNaReYM0HhTCRKjX7M"
 
+# --- Credentials encryption (AES-GCM at rest) ---
+CREDENTIAL_ENCRYPTION_KEY = "e1ab60dd124482b256f93750ed8d59b90d10c9dcbd8f8f61a66d3f539b02e426"
+
 # --- App ---
 APP_URL = "https://eweblb.com"
+VITE_APP_URL = "https://eweblb.com"
 NODE_ENV = "production"
 
 # --- Runtime limits (abuse protection) ---

@@ -14,6 +14,9 @@ const NAV = [
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [handle, setHandleState] = useState<string | null>(null);
+  useEffect(() => setHandleState(currentHandle()), [pathname]);
+
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
@@ -55,6 +58,15 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="mt-auto space-y-3 p-3">
+          <Link
+            to="/account"
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs transition-colors hover:bg-sidebar-accent/60"
+          >
+            <LogIn className="size-3.5 shrink-0 text-primary" />
+            <span className="min-w-0 truncate font-mono">
+              {handle ? accountLabel(handle) : "Create account"}
+            </span>
+          </Link>
           <div className="rounded-lg border border-border bg-gradient-to-br from-primary/10 to-accent/10 p-3">
             <p className="flex items-center gap-1.5 font-display text-xs font-semibold">
               <InfinityIcon className="size-3.5 text-primary" /> Unlimited plan
