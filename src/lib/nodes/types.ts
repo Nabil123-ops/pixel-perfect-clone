@@ -110,7 +110,10 @@ export interface SubNodeRef {
   kind: string;
   label: string;
   params: Json;
+  /** Merged fields of every credential attached to this sub-node (back-compat: single object). */
   credential: Json;
+  /** Every credential attached to this sub-node, decrypted, keyed by credential name. */
+  credentials: Record<string, Record<string, string>>;
   /** Execute the sub-node as a callable unit (tools, retrievers, embeddings). */
   invoke: (items: Json[]) => Promise<Json[]>;
 }
@@ -120,9 +123,16 @@ export interface NodeContext {
   items: Json[];
   /** Raw node parameters (unresolved). Typed loose so nodes can read p.foo. */
   params: Json;
-  /** Credential values attached to this node (decrypted, server-side only). */
+  /**
+   * Credential values attached to this node (decrypted, server-side only).
+   * When several credentials are attached, their fields are merged into one
+   * object (later-attached credentials win on key clashes) so existing node
+   * code that reads e.g. `ctx.credential.token` keeps working unmodified.
+   */
   credential: Json;
-  /** All credentials keyed by name — powers {{ $cred.Name.key }}. */
+  /** Every credential attached to this node, decrypted, keyed by credential name. */
+  credentials: Record<string, Record<string, string>>;
+  /** All credentials in the account keyed by name — powers {{ $cred.Name.key }}. */
   creds: Record<string, Record<string, string>>;
   /** Payload supplied by the trigger (webhook body, schedule tick, ...). */
   trigger: Json[];
