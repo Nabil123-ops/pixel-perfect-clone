@@ -89,12 +89,14 @@ export function EndpointPanel({
   nodeKind,
   webhookPath,
   title = "Execution endpoints",
+  customDomain = null,
 }: {
   workflowId: string;
   nodeId?: string;
   nodeKind?: string;
   webhookPath?: string;
   title?: string;
+  customDomain?: string | null;
 }) {
   const fetchKey = useServerFn(getExecKey);
   const { data } = useQuery({
@@ -110,12 +112,12 @@ export function EndpointPanel({
 
   const urls = useMemo(() => {
     const build = (env: Env) => ({
-      exec: execUrl(env, workflowId, key, nodeId),
-      webhook: webhookPath !== undefined ? webhookUrl(env, workflowId, webhookPath) : null,
-      chat: nodeKind === "chatTrigger" ? chatUrl(env, workflowId) : null,
+      exec: execUrl(env, workflowId, key, nodeId, customDomain),
+      webhook: webhookPath !== undefined ? webhookUrl(env, workflowId, webhookPath, customDomain) : null,
+      chat: nodeKind === "chatTrigger" ? chatUrl(env, workflowId, customDomain) : null,
     });
     return { test: build("test"), production: build("production") };
-  }, [workflowId, key, nodeId, webhookPath, nodeKind]);
+  }, [workflowId, key, nodeId, webhookPath, nodeKind, customDomain]);
 
   const callNow = async (env: Env) => {
     setBusy(true);
@@ -136,7 +138,7 @@ export function EndpointPanel({
       if (json.executionId) {
         setLastExecution({
           id: json.executionId,
-          url: json.executionUrl ?? executionLink(env, json.executionId),
+          url: json.executionUrl ?? executionLink(env, json.executionId, customDomain),
         });
       }
       if (res.ok) toast.success(`HTTP ${res.status} · ${json.ms ?? 0}ms`);
