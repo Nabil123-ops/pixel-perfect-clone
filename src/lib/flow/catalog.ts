@@ -1,8 +1,9 @@
 import { allNodes, getNode } from "@/lib/nodes/registry";
-import type { NodeModule, ParamField } from "@/lib/nodes/types";
+import type { ConnType, NodeModule, ParamField } from "@/lib/nodes/types";
 import type { Json } from "./types";
 
 export type { ParamField };
+export type { ConnType } from "@/lib/nodes/types";
 
 /** Editor-facing view of a registered node module. */
 export interface NodeSpec {
@@ -11,6 +12,10 @@ export interface NodeSpec {
   group: NodeModule["group"];
   description: string;
   icon: string;
+  /** Extra typed inputs beyond the implicit `main` one (AI capability wiring). */
+  inputs: { type: ConnType; label?: string; required?: boolean }[];
+  /** Set when this node plugs INTO a root node instead of the main data flow. */
+  subType?: Exclude<ConnType, "main">;
   outputs: { handle: string; label: string }[];
   fields: ParamField[];
   defaults: Record<string, Json>;
@@ -25,6 +30,8 @@ const toSpec = (mod: NodeModule): NodeSpec => ({
   group: mod.group,
   description: mod.description,
   icon: mod.icon,
+  inputs: mod.inputs ?? [],
+  ...(mod.subType ? { subType: mod.subType } : {}),
   outputs: mod.outputs,
   fields: mod.fields,
   defaults: mod.defaults,
@@ -45,6 +52,7 @@ export function specOf(kind: string): NodeSpec {
         group: "Core",
         description: "Unknown node",
         icon: "circle",
+        inputs: [],
         outputs: [{ handle: "main", label: "" }],
         fields: [],
         defaults: {},
@@ -63,5 +71,19 @@ export function searchCatalog(query: string, group?: string): NodeSpec[] {
       .join(" ")
       .toLowerCase()
       .includes(q);
+  });
+}
+
+/**
+ * Nodes that can plug into a given typed AI slot (e.g. every "Chat Model"
+ * node for an `ai_languageModel` slot). Used by the "+" picker on a root
+ * node's AI sub-inputs so only compatible nodes are offered.
+ */
+export function catalogForSubType(subType: ConnType, query = ""): NodeSpec[] {
+  const q = query.trim().toLowerCase();
+  return CATALOG.filter((spec) => {
+    if (spec.subType !== subType) return false;
+    if (!q) return true;
+    return [spec.name, spec.description, ...spec.keywords].join(" ").toLowerCase().includes(q);
   });
 }
