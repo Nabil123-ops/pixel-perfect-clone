@@ -60,8 +60,32 @@ export function basic(cred: Record<string, string>) {
 }
 
 export function createAppNode(spec: AppSpec): NodeModule {
-  const opFields: ParamField[] = spec.operations.flatMap((op) => op.fields ?? []);
-  const seen = new Set<string>();
+  // Merge every operation's fields into one list, keyed by field key, and
+  // record which operation(s) each field belongs to. The inspector uses this
+  // to show only the fields relevant to the operation currently selected,
+  // instead of every field from every operation at once.
+  const byKey = new Map<string, ParamField>();
+  for (const op of spec.operations) {
+    for (const field of op.fields ?? []) {
+      const existing = byKey.get(field.key);
+      if (existing) {
+        // Shared across operations (e.g. Record ID on Get/Update/Delete) —
+        // widen its operation list rather than treat it as operation-specific.
+        if (existing.operations && !existing.operations.includes(op.label)) {
+          existing.operations = [...existing.operations, op.label];
+        }
+      } else {
+        byKey.set(field.key, { ...field, operations: [op.label] });
+      }
+    }
+  }
+  // A field shared by every operation should always show — drop the tag.
+  for (const field of byKey.values()) {
+    if (field.operations && field.operations.length >= spec.operations.length) {
+      delete field.operations;
+    }
+  }
+  const opFields = [...byKey.values()];
   const fields: ParamField[] = [
     {
       key: "operation",
@@ -69,7 +93,7 @@ export function createAppNode(spec: AppSpec): NodeModule {
       type: "select",
       options: spec.operations.map((o) => o.label),
     },
-    ...opFields.filter((f) => (seen.has(f.key) ? false : (seen.add(f.key), true))),
+    ...opFields,
   ];
 
   return {
