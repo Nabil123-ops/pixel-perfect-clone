@@ -21,7 +21,8 @@ export function testOrigin(): string {
 
 export type Env = "test" | "production";
 
-export function originFor(env: Env): string {
+export function originFor(env: Env, customDomain?: string | null): string {
+  if (env === "production" && customDomain) return `https://${customDomain}`;
   return env === "production" ? PRODUCTION_ORIGIN : testOrigin();
 }
 
@@ -35,24 +36,25 @@ export function execUrl(
   workflowId: string,
   key: string,
   nodeId?: string,
+  customDomain?: string | null,
 ): string {
   const query = key ? `?key=${encodeURIComponent(key)}` : "";
-  return `${originFor(env)}${execPath(workflowId, nodeId)}${query}`;
+  return `${originFor(env, customDomain)}${execPath(workflowId, nodeId)}${query}`;
 }
 
 /** Public webhook endpoint of a webhook trigger node. */
-export function webhookUrl(env: Env, workflowId: string, path: string): string {
-  return `${originFor(env)}/api/public/webhook/${workflowId}/${String(path).replace(/^\/+/, "")}`;
+export function webhookUrl(env: Env, workflowId: string, path: string, customDomain?: string | null): string {
+  return `${originFor(env, customDomain)}/api/public/webhook/${workflowId}/${String(path).replace(/^\/+/, "")}`;
 }
 
 /** Public chat endpoint of a chat trigger node. */
-export function chatUrl(env: Env, workflowId: string): string {
-  return `${originFor(env)}/api/public/chat/${workflowId}`;
+export function chatUrl(env: Env, workflowId: string, customDomain?: string | null): string {
+  return `${originFor(env, customDomain)}/api/public/chat/${workflowId}`;
 }
 
 /** Shareable link that opens one execution in the Executions page. */
-export function executionLink(env: Env, executionId: string): string {
-  return `${originFor(env)}/executions?run=${executionId}`;
+export function executionLink(env: Env, executionId: string, customDomain?: string | null): string {
+  return `${originFor(env, customDomain)}/executions?run=${executionId}`;
 }
 
 export function curlFor(
