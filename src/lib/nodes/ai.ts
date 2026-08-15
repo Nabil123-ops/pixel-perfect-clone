@@ -35,8 +35,20 @@ export function modelNode(opts: {
       { key: "model", label: "Model", type: "select", options: opts.models },
       { key: "temperature", label: "Temperature", type: "number" },
       { key: "baseUrl", label: "Custom base URL (optional)", type: "text" },
+      {
+        key: "systemPrompt",
+        label: "System prompt (optional)",
+        type: "code",
+        placeholder: "Prepended to every request made with this model.",
+      },
     ],
-    defaults: { model: opts.models[0]!, temperature: 0.7, baseUrl: "", __config: config },
+    defaults: {
+      model: opts.models[0]!,
+      temperature: 0.7,
+      baseUrl: "",
+      systemPrompt: "",
+      __config: config,
+    },
     execute: (ctx) => main([{ provider: opts.kind, model: String(ctx.params.model ?? "") }]),
   };
 }
