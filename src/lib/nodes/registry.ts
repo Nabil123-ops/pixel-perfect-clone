@@ -6,6 +6,7 @@ import { core2Nodes } from "./core2";
 import { aiNodes } from "./ai";
 import { appNodes } from "./apps";
 import { catalogAppNodes } from "./apps-catalog";
+import { catalogAppNodes2 } from "./apps-catalog2";
 import { core3Nodes } from "./core3";
 import { files2Nodes } from "./files2";
 import { model2Nodes } from "./ai2";
@@ -46,6 +47,7 @@ registerNodes([
   ...retrievalNodes,
   ...aiTools2Nodes,
   ...catalogAppNodes,
+  ...catalogAppNodes2,
   slack,
   discord,
   telegram,
