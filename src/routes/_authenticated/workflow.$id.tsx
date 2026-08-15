@@ -33,7 +33,11 @@ import {
 import { toast } from "sonner";
 
 import { Shell } from "@/components/Shell";
-import { FlowNodeCard, type NodeStatus } from "@/components/flow/FlowNodeCard";
+import {
+  FlowNodeCard,
+  type ConnectedSubNode,
+  type NodeStatus,
+} from "@/components/flow/FlowNodeCard";
 import { AddNodeEdge, type AddNodeEdgeData } from "@/components/flow/AddNodeEdge";
 import { CredentialsDialog } from "@/components/flow/CredentialsDialog";
 import { Inspector } from "@/components/flow/Inspector";
@@ -64,6 +68,7 @@ import {
   setWorkflowActive,
 } from "@/lib/api/workflows.functions";
 import { uid } from "@/lib/flow/store";
+import type { ConnType } from "@/lib/nodes/types";
 import type { FlowNodeKind, RunResult, StoredEdge, StoredNode } from "@/lib/flow/types";
 
 export const Route = createFileRoute("/_authenticated/workflow/$id")({
@@ -199,7 +204,11 @@ function EditorPage() {
     setName(flow.name);
     setActive(flow.active);
     setNodes(
-      (flow.nodes as StoredNode[]).map((n) => ({ ...n, type: "flow", data: { ...n.data } })) as Node[],
+      (flow.nodes as StoredNode[]).map((n) => ({
+        ...n,
+        type: "flow",
+        data: { ...n.data },
+      })) as Node[],
     );
     setEdges((flow.edges as StoredEdge[]).map((e) => withEdgeExtras(e)) as Edge[]);
     setDirty(false);
@@ -227,12 +236,112 @@ function EditorPage() {
     [id, name, active, nodes, edges, save, qc],
   );
 
+  /**
+   * Only let a connection through when the two handles agree on connection
+   * type: `main` only wires into `main` (never into a typed AI slot or a
+   * sub-node, which has no main input at all), and each `ai_*` type only
+   * wires into a root input declared with that exact type. This is what
+   * stops e.g. a Tool node's output from being dropped onto an HTTP node,
+   * or a plain data edge from landing on a Chat Model input.
+   */
+  const isValidConnection = useCallback(
+    (c: Connection | Edge) => {
+      if (!c.source || !c.target || c.source === c.target) return false;
+      const sourceNode = nodes.find((n) => n.id === c.source);
+      const targetNode = nodes.find((n) => n.id === c.target);
+      if (!sourceNode || !targetNode) return true; // fail open while nodes are still mounting
+      const sourceSpec = specOf((sourceNode.data as { kind: FlowNodeKind }).kind);
+      const targetSpec = specOf((targetNode.data as { kind: FlowNodeKind }).kind);
+
+      const sourceHandle = c.sourceHandle ?? "main";
+      const targetHandle = c.targetHandle ?? "main";
+      if (sourceHandle !== targetHandle) return false; // types must match exactly
+
+      if (targetSpec.isTrigger) return false; // triggers never accept an input
+
+      if (sourceHandle === "main") {
+        // A sub-node (Chat Model / Memory / Tool / ...) has no main output,
+        // and a sub-node target has no main input — only regular nodes do.
+        return !sourceSpec.subType && !targetSpec.subType;
+      }
+
+      // Typed AI connection: the source must actually be that kind of
+      // sub-node, and the target must declare an input of that exact type.
+      if (sourceSpec.subType !== sourceHandle) return false;
+      const wantsType = targetSpec.inputs.find((i) => i.type === targetHandle);
+      if (!wantsType) return false;
+
+      // n8n convention: a chat model / memory slot takes a single node;
+      // tools (and everything else) can take several.
+      if (targetHandle !== "ai_tool") {
+        const alreadyWired = edges.some(
+          (e) => e.target === c.target && (e.targetHandle ?? "main") === targetHandle,
+        );
+        if (alreadyWired) return false;
+      }
+      return true;
+    },
+    [nodes, edges],
+  );
+
   const onConnect = useCallback(
     (c: Connection) => {
       setDirty(true);
-      setEdges((eds) => addEdge(withEdgeExtras({ ...c, id: uid() }), eds));
+      setEdges((eds) =>
+        addEdge<Edge>(
+          withEdgeExtras({
+            ...c,
+            sourceHandle: c.sourceHandle ?? "main",
+            targetHandle: c.targetHandle ?? "main",
+            id: uid(),
+          }) as Edge,
+          eds,
+        ),
+      );
     },
     [setEdges, withEdgeExtras],
+  );
+
+  /** Adds a brand-new sub-node (Chat Model / Memory / Tool / ...) and wires
+   *  it into `rootId`'s typed `connType` input — the "+" button on a node's
+   *  bottom slots. Stacks siblings side by side when a slot (e.g. Tool)
+   *  already has one or more nodes connected. */
+  const addSubNode = useCallback(
+    (rootId: string, connType: ConnType, kind: FlowNodeKind) => {
+      const root = nodes.find((n) => n.id === rootId);
+      if (!root) return;
+      const spec = specOf(kind);
+      const nid = uid();
+      const siblingCount = edges.filter(
+        (e) => e.target === rootId && (e.targetHandle ?? "main") === connType,
+      ).length;
+      const position = {
+        x: root.position.x + siblingCount * 190 - 20,
+        y: root.position.y + 210,
+      };
+      setNodes((nds) => [
+        ...nds,
+        {
+          id: nid,
+          type: "flow",
+          position,
+          data: { kind, label: spec.name, params: { ...spec.defaults } },
+        } as Node,
+      ]);
+      setEdges((eds) => [
+        ...eds,
+        withEdgeExtras({
+          id: uid(),
+          source: nid,
+          sourceHandle: spec.outputs[0]?.handle ?? connType,
+          target: rootId,
+          targetHandle: connType,
+        }) as Edge,
+      ]);
+      setSelectedId(nid);
+      setDirty(true);
+    },
+    [nodes, edges, setNodes, setEdges, withEdgeExtras],
   );
 
   const addNode = (kind: FlowNodeKind) => {
@@ -284,23 +393,26 @@ function EditorPage() {
           data: { kind, label: spec.name, params: { ...spec.defaults } },
         } as Node,
       ]);
-      setEdges((eds) => [
-        ...eds.filter((e) => e.id !== edgeId),
-        withEdgeExtras({
-          id: uid(),
-          source: edge.source,
-          sourceHandle: edge.sourceHandle ?? "main",
-          target: nid,
-          targetHandle: "in",
-        }) as Edge,
-        withEdgeExtras({
-          id: uid(),
-          source: nid,
-          sourceHandle: spec.outputs[0]?.handle ?? "main",
-          target: edge.target,
-          targetHandle: edge.targetHandle ?? "in",
-        }) as Edge,
-      ]);
+      setEdges(
+        (eds) =>
+          [
+            ...eds.filter((e) => e.id !== edgeId),
+            withEdgeExtras({
+              id: uid(),
+              source: edge.source,
+              sourceHandle: edge.sourceHandle ?? "main",
+              target: nid,
+              targetHandle: "main",
+            }),
+            withEdgeExtras({
+              id: uid(),
+              source: nid,
+              sourceHandle: spec.outputs[0]?.handle ?? "main",
+              target: edge.target,
+              targetHandle: edge.targetHandle ?? "main",
+            }),
+          ] as Edge[],
+      );
       setSelectedId(nid);
       setDirty(true);
     },
@@ -377,8 +489,48 @@ function EditorPage() {
     return [...map.entries()];
   }, [query, group]);
 
-  const webhookNodes = nodes.filter((n) => (n.data as unknown as NodeData).kind === "webhookTrigger");
+  const webhookNodes = nodes.filter(
+    (n) => (n.data as unknown as NodeData).kind === "webhookTrigger",
+  );
   const hasChatTrigger = nodes.some((n) => (n.data as unknown as NodeData).kind === "chatTrigger");
+
+  /**
+   * Nodes as handed to ReactFlow: each root node also gets a
+   * `connectedSubNodes` map (which sub-node, if any, is wired into each of
+   * its typed AI slots) plus the `onAddSubNode` / `onSelectNode` callbacks
+   * the card's "+" buttons use. Derived from `nodes`/`edges` on every
+   * render instead of stored on the node itself, so it always reflects the
+   * current graph without an extra effect.
+   */
+  const nodesForCanvas = useMemo(() => {
+    return nodes.map((n) => {
+      const nodeData = n.data as unknown as NodeData;
+      const spec = specOf(nodeData.kind);
+      if (!spec.inputs.some((i) => i.type !== "main")) return n;
+      const connectedSubNodes: Record<string, ConnectedSubNode[]> = {};
+      for (const e of edges) {
+        if (e.target !== n.id) continue;
+        const handle = e.targetHandle;
+        if (!handle || handle === "main") continue;
+        const src = nodes.find((x) => x.id === e.source);
+        if (!src) continue;
+        const srcData = src.data as unknown as NodeData;
+        connectedSubNodes[handle] = [
+          ...(connectedSubNodes[handle] ?? []),
+          { id: src.id, label: srcData.label || specOf(srcData.kind).name },
+        ];
+      }
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          connectedSubNodes,
+          onAddSubNode: addSubNode,
+          onSelectNode: setSelectedId,
+        },
+      };
+    });
+  }, [nodes, edges, addSubNode]);
 
   return (
     <Shell>
@@ -411,29 +563,29 @@ function EditorPage() {
                 : "The workflow is paused. Click to activate it so its webhooks, schedules and production URLs start running."
             }
           >
-          <button
-            onClick={async () => {
-              const next = !active;
-              setActive(next);
-              await persist({ active: next });
-              await activate({ data: { id, active: next } });
-              toast.success(
-                next
-                  ? "Workflow activated — webhooks and schedules now run on the server"
-                  : "Workflow deactivated",
-              );
-            }}
-            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-              active
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border bg-secondary text-muted-foreground"
-            }`}
-          >
-            <span
-              className={`size-1.5 rounded-full ${active ? "bg-primary" : "bg-muted-foreground"}`}
-            />
-            {active ? "Active" : "Inactive"}
-          </button>
+            <button
+              onClick={async () => {
+                const next = !active;
+                setActive(next);
+                await persist({ active: next });
+                await activate({ data: { id, active: next } });
+                toast.success(
+                  next
+                    ? "Workflow activated — webhooks and schedules now run on the server"
+                    : "Workflow deactivated",
+                );
+              }}
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-secondary text-muted-foreground"
+              }`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${active ? "bg-primary" : "bg-muted-foreground"}`}
+              />
+              {active ? "Active" : "Inactive"}
+            </button>
           </Hint>
           <Hint text="Every save creates a snapshot. Open this to compare and restore an earlier version of the graph.">
             <Button variant="outline" size="sm" onClick={() => setShowHistory((s) => !s)}>
@@ -505,13 +657,13 @@ function EditorPage() {
                 </p>
                 {specs.map((s) => (
                   <Hint key={s.kind} side="right" title={s.name} text={s.description}>
-                  <button
-                    onClick={() => addNode(s.kind)}
-                    className="group mb-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-secondary"
-                  >
-                    <NodeIcon icon={s.icon} className="size-3.5 shrink-0" />
-                    <span className="truncate">{s.name}</span>
-                  </button>
+                    <button
+                      onClick={() => addNode(s.kind)}
+                      className="group mb-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-secondary"
+                    >
+                      <NodeIcon icon={s.icon} className="size-3.5 shrink-0" />
+                      <span className="truncate">{s.name}</span>
+                    </button>
                   </Hint>
                 ))}
               </div>
@@ -525,7 +677,7 @@ function EditorPage() {
         <div className="relative flex min-w-0 flex-1 flex-col">
           <div className="min-h-0 flex-1">
             <ReactFlow
-              nodes={nodes}
+              nodes={nodesForCanvas}
               edges={edges}
               onNodesChange={(c) => {
                 setDirty(true);
@@ -536,6 +688,7 @@ function EditorPage() {
                 onEdgesChange(c);
               }}
               onConnect={onConnect}
+              isValidConnection={isValidConnection}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               defaultEdgeOptions={{ type: "add" }}
@@ -555,16 +708,22 @@ function EditorPage() {
               the canvas keeps the whole screen. */}
           <div className="flex shrink-0 flex-col border-t border-border bg-card">
             <div className="flex items-center gap-1 px-2 py-1.5">
-              {([
-                ["run", "Logs & data"],
-                ["urls", "URLs"],
-                ...(webhookNodes.length > 0 ? ([["request", "Request"]] as const) : []),
-                ["api", "API console"],
-                ["versions", "Versions"],
-              ] as const).map(([key, label]) => (
+              {(
+                [
+                  ["run", "Logs & data"],
+                  ["urls", "URLs"],
+                  ...(webhookNodes.length > 0 ? ([["request", "Request"]] as const) : []),
+                  ["api", "API console"],
+                  ["versions", "Versions"],
+                ] as const
+              ).map(([key, label]) => (
                 <button
                   key={key}
-                  onClick={() => setDockTab((t) => (t === key && dockOpen ? (setDockOpen(false), t) : (setDockOpen(true), key)))}
+                  onClick={() =>
+                    setDockTab((t) =>
+                      t === key && dockOpen ? (setDockOpen(false), t) : (setDockOpen(true), key),
+                    )
+                  }
                   className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     dockOpen && dockTab === key
                       ? "bg-secondary text-foreground"
@@ -575,10 +734,23 @@ function EditorPage() {
                 </button>
               ))}
               <span className="ml-auto text-[11px] text-muted-foreground">
-                {result ? `${result.ok ? "success" : "error"} · ${result.steps.length} nodes · ${result.ms}ms` : "no runs yet"}
+                {result
+                  ? `${result.ok ? "success" : "error"} · ${result.steps.length} nodes · ${result.ms}ms`
+                  : "no runs yet"}
               </span>
-              <Hint text={dockOpen ? "Hide the bottom panel and give the canvas the full screen." : "Show URLs, request console and execution logs."}>
-                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setDockOpen((o) => !o)}>
+              <Hint
+                text={
+                  dockOpen
+                    ? "Hide the bottom panel and give the canvas the full screen."
+                    : "Show URLs, request console and execution logs."
+                }
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => setDockOpen((o) => !o)}
+                >
                   {dockOpen ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
                 </Button>
               </Hint>
@@ -602,7 +774,11 @@ function EditorPage() {
                 )}
                 {dockTab === "urls" && (
                   <div className="h-full space-y-4 overflow-y-auto p-4">
-                    <EndpointPanel workflowId={id} title="Workflow URLs" customDomain={customDomain} />
+                    <EndpointPanel
+                      workflowId={id}
+                      title="Workflow URLs"
+                      customDomain={customDomain}
+                    />
                     <DomainPanel />
                   </div>
                 )}
@@ -619,18 +795,27 @@ function EditorPage() {
                 )}
                 {dockTab === "api" && (
                   <div className="h-full overflow-hidden">
-                    <ApiConsole workflowId={id} hasChatTrigger={hasChatTrigger} customDomain={customDomain} />
+                    <ApiConsole
+                      workflowId={id}
+                      hasChatTrigger={hasChatTrigger}
+                      customDomain={customDomain}
+                    />
                   </div>
                 )}
                 {dockTab === "versions" && (
                   <div className="h-full overflow-y-auto">
                     {versionList.map((v) => (
-                      <div key={v.id} className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-xs">
+                      <div
+                        key={v.id}
+                        className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-xs"
+                      >
                         <div className="min-w-0 flex-1">
                           <p className="font-medium">
                             v{v.version} · {v.name}
                           </p>
-                          <p className="text-muted-foreground">{new Date(v.createdAt).toLocaleString()}</p>
+                          <p className="text-muted-foreground">
+                            {new Date(v.createdAt).toLocaleString()}
+                          </p>
                         </div>
                         <Button
                           variant="outline"
@@ -659,7 +844,6 @@ function EditorPage() {
           </div>
         </div>
 
-
         {selectedNode && (
           <Inspector
             node={selectedNode}
@@ -677,7 +861,10 @@ function EditorPage() {
                 applyResult(res);
                 const step = res.steps[0];
                 if (step?.status === "error") toast.error(`${step.label}: ${step.error}`);
-                else toast.success(`${step?.label ?? "Node"} returned ${step?.items.length ?? 0} item(s) in ${res.ms}ms`);
+                else
+                  toast.success(
+                    `${step?.label ?? "Node"} returned ${step?.items.length ?? 0} item(s) in ${res.ms}ms`,
+                  );
               } catch (e) {
                 toast.error((e as Error).message);
               } finally {
