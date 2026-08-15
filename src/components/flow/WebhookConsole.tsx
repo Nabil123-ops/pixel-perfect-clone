@@ -38,11 +38,13 @@ export function WebhookConsole({
   triggers,
   active,
   onResult,
+  customDomain = null,
 }: {
   workflowId: string;
   triggers: StoredNode[];
   active: boolean;
   onResult?: (run: RunResult) => void;
+  customDomain?: string | null;
 }) {
   const qc = useQueryClient();
   const send = useServerFn(sendWebhookTest);
@@ -64,7 +66,7 @@ export function WebhookConsole({
   const secret = String(params["secret"] ?? "");
   const respond = String(params["respond"] ?? "onReceived");
 
-  const url = useMemo(() => webhookUrl(target, workflowId, path), [target, workflowId, path]);
+  const url = useMemo(() => webhookUrl(target, workflowId, path, customDomain), [target, workflowId, path, customDomain]);
 
   const httpMethod = (method === "ANY" ? "POST" : method) as
     | "GET"
@@ -245,12 +247,12 @@ export function WebhookConsole({
           </p>
           {logRun?.executionId && (
             <a
-              href={executionLink(target, logRun.executionId)}
+              href={executionLink(target, logRun.executionId, customDomain)}
               target="_blank"
               rel="noreferrer"
               className="mb-1 block truncate font-mono text-[10px] text-primary hover:underline"
             >
-              {executionLink(target, logRun.executionId)}
+              {executionLink(target, logRun.executionId, customDomain)}
             </a>
           )}
           <pre className="h-[136px] overflow-auto rounded-md bg-black/90 p-2 font-mono text-[11px] leading-relaxed text-emerald-300">
