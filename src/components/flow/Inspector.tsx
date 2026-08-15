@@ -54,7 +54,7 @@ export function Inspector({
   const setCredentials = (names: string[]) =>
     onChange({
       credentials: names,
-      ...(names.length ? { credential: names[0] } : { credential: undefined }),
+      credential: names[0] ?? "",
     });
   const addCredential = (name: string) => {
     if (!name || attachedNames.includes(name)) return;
