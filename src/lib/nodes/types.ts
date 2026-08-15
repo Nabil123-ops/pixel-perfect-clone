@@ -61,6 +61,12 @@ export interface ParamField {
   options?: string[];
   placeholder?: string;
   help?: string;
+  /**
+   * Operation label(s) this field applies to (e.g. "Send Message", "List Contacts").
+   * When set, the inspector only shows the field while one of these operations
+   * is selected. Omitted entirely on fields shared by every operation.
+   */
+  operations?: string[];
 }
 
 export interface HttpRequestInput {
