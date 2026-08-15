@@ -10,9 +10,16 @@ import { basic, bearer, createAppNode, type AppOperation, type AppSpec } from ".
  * genuine requests against the vendor's documented REST base URL using the
  * credential the user stores in the Credentials screen. Nothing is mocked.
  *
- * Each app exposes CRUD over its primary resource plus a "Custom Request"
- * operation, so any endpoint the vendor offers is reachable even when it is not
- * enumerated here.
+ * Each app gets a category-appropriate primary action with real, named fields
+ * (e.g. "Send message" → To / Subject / Message for Communication apps,
+ * "Track event" → Event name / Properties for Analytics apps — see
+ * GROUP_PRIMARY below) instead of a single raw JSON box, plus List / Get /
+ * Update / Delete and a "Custom Request" escape hatch so any endpoint the
+ * vendor offers is reachable even when it is not enumerated here. Every
+ * operation also carries an "Additional fields (JSON)" box that merges in
+ * and overrides the typed fields, for whatever is specific to that one
+ * vendor's exact schema. The inspector only shows the fields that belong to
+ * whichever operation is currently selected.
  */
 
 type AuthCode = string; // "bearer" | "basic" | "header:X-Api-Key" | "query:api_key" | "token:Token"
@@ -30,9 +37,10 @@ const queryAuth = (code: AuthCode) => (code.startsWith("query:") ? code.slice(6)
 
 const jsonField = {
   key: "data",
-  label: "Body (JSON)",
+  label: "Additional fields (JSON, merged in)",
   type: "code" as const,
-  placeholder: '{\n  "name": "{{ $json.name }}"\n}',
+  placeholder: '{\n  "customProperty": "value"\n}',
+  help: "Anything you put here is merged into the request body, overriding the typed fields above when keys collide.",
 };
 const idField = { key: "id", label: "Record ID", type: "text" as const, placeholder: "{{ $json.id }}" };
 const limitField = { key: "limit", label: "Limit", type: "number" as const };
@@ -49,8 +57,134 @@ const methodField = {
   options: ["GET", "POST", "PUT", "PATCH", "DELETE"],
 };
 
-function crudOps(resource: string, label: string, pick?: string): AppOperation[] {
+/** Drop empty/undefined keys so typed fields the user left blank don't pollute the body. */
+const compact = (obj: Record<string, Json | undefined>): Json => {
+  const out: Record<string, Json> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === "" || v === null) continue;
+    out[k] = v;
+  }
+  return out;
+};
+
+// ---------- Typed fields shared across the category-aware primary operations ----------
+const toField = {
+  key: "to",
+  label: "To / Recipient / Channel",
+  type: "text" as const,
+  placeholder: "#general, +15551234567, or user@example.com",
+};
+const subjectField = { key: "subject", label: "Subject (if applicable)", type: "text" as const };
+const messageField = { key: "message", label: "Message", type: "textarea" as const, placeholder: "Hello from the workflow!" };
+const nameField = { key: "name", label: "Name", type: "text" as const };
+const emailField = { key: "email", label: "Email", type: "text" as const };
+const amountField = { key: "amount", label: "Amount", type: "number" as const };
+const eventNameField = { key: "eventName", label: "Event name", type: "text" as const, placeholder: "order_completed" };
+const propertiesField = {
+  key: "properties",
+  label: "Properties (JSON)",
+  type: "code" as const,
+  placeholder: '{\n  "plan": "pro"\n}',
+};
+const tableField = { key: "table", label: "Table / Collection", type: "text" as const };
+const rowField = { key: "row", label: "Row / record data (JSON)", type: "code" as const, placeholder: '{\n  "column": "value"\n}' };
+const postTextField = { key: "text", label: "Post text", type: "textarea" as const };
+const mediaUrlField = { key: "mediaUrl", label: "Media URL (optional)", type: "text" as const };
+const filePathField = { key: "path", label: "File path / key", type: "text" as const, placeholder: "/reports/latest.csv" };
+const fileContentField = { key: "content", label: "File content (text or base64)", type: "textarea" as const };
+const queryTextField = { key: "query", label: "Query / search text", type: "text" as const };
+const identifierField = { key: "identifier", label: "Name / identifier", type: "text" as const };
+
+/** A category-specific "primary action" that replaces the generic Create with real, named fields. */
+type PrimaryOp = { label: string; fields: AppOperation["fields"]; body: (p: Record<string, Json>) => Json };
+
+const GROUP_PRIMARY: Partial<Record<NodeGroup, PrimaryOp>> = {
+  Communication: {
+    label: "Send message",
+    fields: [toField, subjectField, messageField],
+    body: (p) =>
+      compact({
+        to: p['to'], recipient: p['to'], channel: p['to'], phone: p['to'],
+        subject: p['subject'],
+        text: p['message'], message: p['message'], body: p['message'], content: p['message'],
+      }),
+  },
+  "Social Media": {
+    label: "Create post",
+    fields: [postTextField, mediaUrlField],
+    body: (p) =>
+      compact({
+        text: p['text'], message: p['text'], status: p['text'], caption: p['text'],
+        media_url: p['mediaUrl'], image_url: p['mediaUrl'],
+      }),
+  },
+  "CRM & Commerce": {
+    label: "Create record",
+    fields: [nameField, emailField, amountField],
+    body: (p) => compact({ name: p['name'], email: p['email'], amount: p['amount'] }),
+  },
+  Marketing: {
+    label: "Create contact",
+    fields: [nameField, emailField],
+    body: (p) => compact({ name: p['name'], email: p['email'] }),
+  },
+  "HR & Finance": {
+    label: "Create record",
+    fields: [nameField, emailField, amountField],
+    body: (p) => compact({ name: p['name'], email: p['email'], amount: p['amount'] }),
+  },
+  Analytics: {
+    label: "Track event",
+    fields: [eventNameField, propertiesField],
+    body: (p) =>
+      compact({
+        event: p['eventName'], name: p['eventName'], event_name: p['eventName'],
+        properties: parseJson(p['properties'], {}),
+      }),
+  },
+  Databases: {
+    label: "Insert row",
+    fields: [tableField, rowField],
+    body: (p) => ({ ...parseJson(p['row'], {}), ...compact({ table: p['table'], collection: p['table'] }) }),
+  },
+  "Cloud & Storage": {
+    label: "Upload file",
+    fields: [filePathField, fileContentField],
+    body: (p) =>
+      compact({
+        path: p['path'], key: p['path'], name: p['path'],
+        content: p['content'], data: p['content'],
+      }),
+  },
+  "Dev & Ops": {
+    label: "Trigger / create",
+    fields: [identifierField],
+    body: (p) => compact({ name: p['identifier'], id: p['identifier'] }),
+  },
+  "Forms & Surveys": {
+    label: "Create record",
+    fields: [nameField, emailField],
+    body: (p) => compact({ name: p['name'], email: p['email'] }),
+  },
+  Productivity: {
+    label: "Create item",
+    fields: [nameField],
+    body: (p) => compact({ name: p['name'], title: p['name'] }),
+  },
+  Utilities: {
+    label: "Request",
+    fields: [queryTextField],
+    body: (p) => compact({ q: p['query'], query: p['query'], text: p['query'], input: p['query'] }),
+  },
+};
+
+function crudOps(resource: string, label: string, group: NodeGroup, pick?: string): AppOperation[] {
   const base = resource.startsWith("/") ? resource : `/${resource}`;
+  const primary = GROUP_PRIMARY[group];
+  const primaryFields = primary?.fields ?? [];
+  const primaryLabel = primary?.label ?? `Create ${label}`;
+  const primaryBody = primary?.body ?? ((p: Record<string, Json>) => parseJson(p['data'], {}));
+
   return [
     {
       key: "list",
@@ -64,19 +198,19 @@ function crudOps(resource: string, label: string, pick?: string): AppOperation[]
     { key: "get", label: `Get ${label}`, method: "GET", path: `${base}/{id}`, fields: [idField] },
     {
       key: "create",
-      label: `Create ${label}`,
+      label: primaryLabel,
       method: "POST",
       path: base,
-      fields: [jsonField],
-      body: (p) => parseJson(p['data'], {}),
+      fields: [...primaryFields, jsonField],
+      body: (p) => ({ ...primaryBody(p), ...parseJson(p['data'], {}) }),
     },
     {
       key: "update",
       label: `Update ${label}`,
       method: "PATCH",
       path: `${base}/{id}`,
-      fields: [idField, jsonField],
-      body: (p) => parseJson(p['data'], {}),
+      fields: [idField, ...primaryFields, jsonField],
+      body: (p) => ({ ...primaryBody(p), ...parseJson(p['data'], {}) }),
     },
     { key: "delete", label: `Delete ${label}`, method: "DELETE", path: `${base}/{id}`, fields: [idField] },
     {
@@ -460,12 +594,13 @@ const APPS: Record<string, Entry> = {
 export function specFor(kind: string, entry: Entry): AppSpec {
   const [name, group, icon, baseUrl, auth, resource, resourceLabel] = entry;
   const queryKey = queryAuth(auth);
-  const ops = crudOps(resource, resourceLabel);
+  const ops = crudOps(resource, resourceLabel, group);
+  const primaryLabel = (GROUP_PRIMARY[group]?.label ?? `Create ${resourceLabel}`).toLowerCase();
   return {
     kind,
     name,
     group,
-    description: `${name} REST API — list, read, create, update and delete ${resourceLabel.toLowerCase()}, plus any custom endpoint.`,
+    description: `${name} REST API — ${primaryLabel}, list, read, update and delete ${resourceLabel.toLowerCase()}, or send any custom request.`,
     icon,
     baseUrl: (cred) => cred['baseUrl'] || baseUrl,
     credentialType: auth === "basic" ? "basicAuth" : auth === "bearer" ? "bearer" : "apiKey",
