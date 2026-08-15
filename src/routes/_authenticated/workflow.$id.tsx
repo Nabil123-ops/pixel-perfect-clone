@@ -39,6 +39,8 @@ import { Hint } from "@/components/flow/Hint";
 import { EndpointPanel } from "@/components/flow/EndpointPanel";
 import { RunPanel } from "@/components/flow/RunPanel";
 import { WebhookConsole } from "@/components/flow/WebhookConsole";
+import { ApiConsole } from "@/components/flow/ApiConsole";
+import { DomainPanel } from "@/components/flow/DomainPanel";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +53,7 @@ import {
   listExecutions,
   getExecution,
 } from "@/lib/api/executions.functions";
+import { getVerifiedDomain } from "@/lib/api/domains.functions";
 import {
   getWorkflow,
   listWorkflowVersions,
@@ -118,6 +121,7 @@ function EditorPage() {
   const execution = useServerFn(getExecution);
   const versions = useServerFn(listWorkflowVersions);
   const restore = useServerFn(restoreWorkflowVersion);
+  const fetchVerifiedDomain = useServerFn(getVerifiedDomain);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -134,7 +138,7 @@ function EditorPage() {
   const [showEndpoints, setShowEndpoints] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [dockOpen, setDockOpen] = useState(true);
-  const [dockTab, setDockTab] = useState<"run" | "urls" | "request" | "versions">("run");
+  const [dockTab, setDockTab] = useState<"run" | "urls" | "request" | "api" | "versions">("run");
   const runningRef = useRef(false);
 
   const { data: flow } = useQuery({
@@ -167,6 +171,13 @@ function EditorPage() {
     queryFn: () => versions({ data: { id } }),
     enabled: showHistory,
   });
+
+  const { data: verifiedDomainData } = useQuery({
+    queryKey: ["custom-domains", "verified"],
+    queryFn: () => fetchVerifiedDomain().catch(() => ({ domain: null })),
+    staleTime: 5 * 60_000,
+  });
+  const customDomain = verifiedDomainData?.domain ?? null;
 
   useEffect(() => {
     if (flow === undefined) return;
@@ -297,6 +308,7 @@ function EditorPage() {
   }, [query, group]);
 
   const webhookNodes = nodes.filter((n) => (n.data as unknown as NodeData).kind === "webhookTrigger");
+  const hasChatTrigger = nodes.some((n) => (n.data as unknown as NodeData).kind === "chatTrigger");
 
   return (
     <Shell>
@@ -475,6 +487,7 @@ function EditorPage() {
                 ["run", "Logs & data"],
                 ["urls", "URLs"],
                 ...(webhookNodes.length > 0 ? ([["request", "Request"]] as const) : []),
+                ["api", "API console"],
                 ["versions", "Versions"],
               ] as const).map(([key, label]) => (
                 <button
@@ -516,8 +529,9 @@ function EditorPage() {
                   </div>
                 )}
                 {dockTab === "urls" && (
-                  <div className="h-full overflow-y-auto p-4">
-                    <EndpointPanel workflowId={id} title="Workflow URLs" />
+                  <div className="h-full space-y-4 overflow-y-auto p-4">
+                    <EndpointPanel workflowId={id} title="Workflow URLs" customDomain={customDomain} />
+                    <DomainPanel />
                   </div>
                 )}
                 {dockTab === "request" && webhookNodes.length > 0 && (
@@ -527,7 +541,13 @@ function EditorPage() {
                       triggers={webhookNodes.map(toStored)}
                       active={active}
                       onResult={applyResult}
+                      customDomain={customDomain}
                     />
+                  </div>
+                )}
+                {dockTab === "api" && (
+                  <div className="h-full overflow-hidden">
+                    <ApiConsole workflowId={id} hasChatTrigger={hasChatTrigger} customDomain={customDomain} />
                   </div>
                 )}
                 {dockTab === "versions" && (
