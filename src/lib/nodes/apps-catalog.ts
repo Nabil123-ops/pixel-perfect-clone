@@ -91,7 +91,7 @@ function crudOps(resource: string, label: string, pick?: string): AppOperation[]
 }
 
 /** [kind, display name, group, brand icon slug, base URL, auth, resource path, resource label] */
-type Entry = [string, NodeGroup, string, string, AuthCode, string, string];
+export type Entry = [string, NodeGroup, string, string, AuthCode, string, string];
 
 const APPS: Record<string, Entry> = {
   // ---------- Communication ----------
@@ -457,7 +457,7 @@ const APPS: Record<string, Entry> = {
 };
 
 /** Build the AppSpec for a catalog entry. */
-function specFor(kind: string, entry: Entry): AppSpec {
+export function specFor(kind: string, entry: Entry): AppSpec {
   const [name, group, icon, baseUrl, auth, resource, resourceLabel] = entry;
   const queryKey = queryAuth(auth);
   const ops = crudOps(resource, resourceLabel);
@@ -483,6 +483,13 @@ function specFor(kind: string, entry: Entry): AppSpec {
   };
 }
 
-export const catalogAppNodes: NodeModule[] = Object.entries(APPS).map(([kind, entry]) =>
-  createAppNode(specFor(kind, entry)),
-);
+export type CatalogEntry = Entry;
+
+/** Turn a `{ kind: Entry }` record into real REST nodes. */
+export function buildCatalog(entries: Record<string, Entry>): NodeModule[] {
+  return Object.entries(entries).map(([kind, entry]) => createAppNode(specFor(kind, entry)));
+}
+
+export const APP_KEYS = new Set(Object.keys(APPS));
+
+export const catalogAppNodes: NodeModule[] = buildCatalog(APPS);
