@@ -12,6 +12,7 @@ import {
   useNodesState,
   type Connection,
   type Edge,
+  type EdgeTypes,
   type Node,
   type NodeTypes,
 } from "@xyflow/react";
@@ -33,6 +34,7 @@ import { toast } from "sonner";
 
 import { Shell } from "@/components/Shell";
 import { FlowNodeCard, type NodeStatus } from "@/components/flow/FlowNodeCard";
+import { AddNodeEdge, type AddNodeEdgeData } from "@/components/flow/AddNodeEdge";
 import { CredentialsDialog } from "@/components/flow/CredentialsDialog";
 import { Inspector } from "@/components/flow/Inspector";
 import { Hint } from "@/components/flow/Hint";
@@ -86,6 +88,7 @@ export const Route = createFileRoute("/_authenticated/workflow/$id")({
 });
 
 const nodeTypes: NodeTypes = { flow: FlowNodeCard };
+const edgeTypes: EdgeTypes = { add: AddNodeEdge };
 
 type NodeData = StoredNode["data"] & { status?: NodeStatus; itemCount?: number };
 
@@ -140,6 +143,14 @@ function EditorPage() {
   const [dockOpen, setDockOpen] = useState(true);
   const [dockTab, setDockTab] = useState<"run" | "urls" | "request" | "api" | "versions">("run");
   const runningRef = useRef(false);
+  const edgeCallbacksRef = useRef<AddNodeEdgeData>({
+    onInsert: () => {},
+    onRemove: () => {},
+  });
+  const withEdgeExtras = useCallback(
+    <T extends { id: string }>(e: T) => ({ ...e, type: "add", data: edgeCallbacksRef.current }),
+    [],
+  );
 
   const { data: flow } = useQuery({
     queryKey: ["workflow", id],
@@ -190,9 +201,9 @@ function EditorPage() {
     setNodes(
       (flow.nodes as StoredNode[]).map((n) => ({ ...n, type: "flow", data: { ...n.data } })) as Node[],
     );
-    setEdges((flow.edges as StoredEdge[]).map((e) => ({ ...e, animated: true })) as Edge[]);
+    setEdges((flow.edges as StoredEdge[]).map((e) => withEdgeExtras(e)) as Edge[]);
     setDirty(false);
-  }, [flow, navigate, setNodes, setEdges]);
+  }, [flow, navigate, setNodes, setEdges, withEdgeExtras]);
 
   const persist = useCallback(
     async (patch?: { name?: string; active?: boolean }) => {
@@ -219,9 +230,9 @@ function EditorPage() {
   const onConnect = useCallback(
     (c: Connection) => {
       setDirty(true);
-      setEdges((eds) => addEdge({ ...c, animated: true, id: uid() }, eds));
+      setEdges((eds) => addEdge(withEdgeExtras({ ...c, id: uid() }), eds));
     },
-    [setEdges],
+    [setEdges, withEdgeExtras],
   );
 
   const addNode = (kind: FlowNodeKind) => {
@@ -239,6 +250,65 @@ function EditorPage() {
     setSelectedId(nid);
     setDirty(true);
   };
+
+  const removeEdgeById = useCallback(
+    (edgeId: string) => {
+      setDirty(true);
+      setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+    },
+    [setEdges],
+  );
+
+  const insertNodeOnEdge = useCallback(
+    (edgeId: string, kind: FlowNodeKind) => {
+      const edge = edges.find((e) => e.id === edgeId);
+      if (!edge) return;
+      const spec = specOf(kind);
+      const nid = uid();
+      const source = nodes.find((n) => n.id === edge.source);
+      const target = nodes.find((n) => n.id === edge.target);
+      const position =
+        source && target
+          ? {
+              x: (source.position.x + target.position.x) / 2,
+              y: (source.position.y + target.position.y) / 2,
+            }
+          : { x: 260, y: 200 };
+
+      setNodes((nds) => [
+        ...nds,
+        {
+          id: nid,
+          type: "flow",
+          position,
+          data: { kind, label: spec.name, params: { ...spec.defaults } },
+        } as Node,
+      ]);
+      setEdges((eds) => [
+        ...eds.filter((e) => e.id !== edgeId),
+        withEdgeExtras({
+          id: uid(),
+          source: edge.source,
+          sourceHandle: edge.sourceHandle ?? "main",
+          target: nid,
+          targetHandle: "in",
+        }) as Edge,
+        withEdgeExtras({
+          id: uid(),
+          source: nid,
+          sourceHandle: spec.outputs[0]?.handle ?? "main",
+          target: edge.target,
+          targetHandle: edge.targetHandle ?? "in",
+        }) as Edge,
+      ]);
+      setSelectedId(nid);
+      setDirty(true);
+    },
+    [edges, nodes, setNodes, setEdges, withEdgeExtras],
+  );
+
+  edgeCallbacksRef.current.onInsert = insertNodeOnEdge;
+  edgeCallbacksRef.current.onRemove = removeEdgeById;
 
   const selectedNode = useMemo(() => {
     const n = nodes.find((x) => x.id === selectedId);
@@ -467,6 +537,8 @@ function EditorPage() {
               }}
               onConnect={onConnect}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              defaultEdgeOptions={{ type: "add" }}
               onNodeClick={(_, n) => setSelectedId(n.id)}
               onPaneClick={() => setSelectedId(null)}
               fitView
