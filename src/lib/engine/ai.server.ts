@@ -12,6 +12,8 @@ export interface ModelConfig {
   temperature: number;
   /** Anthropic uses x-api-key + anthropic-version instead of a bearer token. */
   style: "openai" | "anthropic";
+  /** Per-model system prompt, prepended ahead of the caller's own messages. */
+  systemPrompt: string;
 }
 
 export function modelConfigFrom(sub: SubNodeRef | undefined): ModelConfig | null {
@@ -27,6 +29,7 @@ export function modelConfigFrom(sub: SubNodeRef | undefined): ModelConfig | null
     apiKey: String(cred['apiKey'] ?? cred['token'] ?? ""),
     temperature: Number(p['temperature'] ?? 0.7),
     style: cfg['style'] === "anthropic" ? "anthropic" : "openai",
+    systemPrompt: String(p['systemPrompt'] ?? ""),
   };
 }
 
@@ -49,9 +52,13 @@ export async function callChat(cfg: ModelConfig, req: ChatRequest): Promise<Chat
     headers["Authorization"] = `Bearer ${key}`;
   }
 
+  const messages: ChatMessage[] = cfg.systemPrompt
+    ? [{ role: "system", content: cfg.systemPrompt }, ...req.messages]
+    : req.messages;
+
   const body: Record<string, Json> = {
     model: cfg.model,
-    messages: req.messages,
+    messages,
     temperature: req.temperature ?? cfg.temperature,
   };
   if (cfg.model.startsWith("gpt-5.6")) body['reasoning_effort'] = "none";
