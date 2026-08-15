@@ -41,6 +41,15 @@ export function Inspector({
   const setParam = (key: string, value: unknown) =>
     onChange({ params: { ...node.data.params, [key]: value } });
 
+  // Multi-operation app nodes (REST integrations) tag each field with the
+  // operation(s) it belongs to — only show the ones that apply to whichever
+  // operation is currently selected, instead of every field from every
+  // operation at once.
+  const currentOperation = String(node.data.params?.["operation"] ?? "");
+  const visibleFields = spec.fields.filter(
+    (field) => !field.operations || field.operations.includes(currentOperation),
+  );
+
   const listCreds = useServerFn(listCredentials);
   const { data: allCredentials = [] } = useQuery({
     queryKey: ["credentials"],
@@ -168,7 +177,7 @@ export function Inspector({
           )}
         </div>
 
-        {spec.fields.map((field) => (
+        {visibleFields.map((field) => (
           <div key={field.key} className="space-y-1.5">
             <Hint
               title={field.label}
