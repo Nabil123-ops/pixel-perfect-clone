@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, User, LayoutTemplate, KeyRound, Activity, Infinity as InfinityIcon, LogIn } from "lucide-react";
+import { Home, User, LayoutTemplate, KeyRound, Activity, Infinity as InfinityIcon, LogIn, Sparkles } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { accountLabel, currentHandle } from "@/lib/account";
@@ -8,6 +8,7 @@ import { AskAIPanel } from "@/components/AskAIPanel";
 const NAV = [
   { to: "/", label: "Overview", icon: Home },
   { to: "/workflows", label: "Personal", icon: User },
+  { to: "/builder", label: "AI Builder", icon: Sparkles },
   { to: "/templates", label: "Templates", icon: LayoutTemplate },
   { to: "/credentials", label: "Credentials", icon: KeyRound },
   { to: "/executions", label: "Executions", icon: Activity },
