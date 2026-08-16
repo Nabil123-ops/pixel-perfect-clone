@@ -29,7 +29,7 @@ const domainSchema = z
 
 const recordNameFor = (domain: string) => `n9n-verify.${domain}`;
 
-const rowToDomain = (row: {
+interface DomainRow {
   id: string;
   domain: string;
   verification_token: string;
@@ -38,7 +38,30 @@ const rowToDomain = (row: {
   last_check_at: string | null;
   last_check_error: string | null;
   created_at: string;
-}): CustomDomain => ({
+}
+
+type Res<T> = { data: T; error: { message: string; code?: string } | null };
+
+/**
+ * `custom_domains` lives in a migration applied outside the generated type
+ * bundle, so we reach it through this narrow structural query type.
+ */
+interface DomainQuery extends PromiseLike<Res<DomainRow[] | null>> {
+  select(columns: string): DomainQuery;
+  insert(values: Record<string, unknown>): DomainQuery;
+  update(values: Record<string, unknown>): DomainQuery;
+  delete(): DomainQuery;
+  eq(column: string, value: unknown): DomainQuery;
+  order(column: string, opts?: { ascending?: boolean }): DomainQuery;
+  limit(n: number): DomainQuery;
+  maybeSingle(): Promise<Res<DomainRow | null>>;
+  single(): Promise<Res<DomainRow>>;
+}
+
+const domainsTable = (supabase: unknown): DomainQuery =>
+  (supabase as { from(table: string): DomainQuery }).from("custom_domains");
+
+const rowToDomain = (row: DomainRow): CustomDomain => ({
   id: row.id,
   domain: row.domain,
   verificationToken: row.verification_token,
