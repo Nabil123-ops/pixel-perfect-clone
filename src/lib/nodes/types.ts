@@ -187,7 +187,15 @@ export interface NodeModule {
   /** Trigger nodes start a workflow and are not executed mid-graph. */
   isTrigger?: boolean;
   /** Credential type this node expects, if any. */
-  credentialType?: "apiKey" | "bearer" | "basicAuth" | "oauth2" | "webhookUrl";
+  credentialType?: "apiKey" | "bearer" | "basicAuth" | "oauth2" | "webhookUrl" | "customHeader";
+  /**
+   * True when the node cannot do real work without a credential attached
+   * (e.g. a model or API node that always calls an authenticated endpoint).
+   * Left unset/false for general-purpose nodes like HTTP Request, where a
+   * credential is often optional (public endpoints). Enforced by
+   * `validateGraph` before a run starts, and surfaced in the inspector.
+   */
+  credentialRequired?: boolean;
   /** Docs/keywords used by node-panel search. */
   keywords?: string[];
   /** Marked incomplete on purpose — surfaced in the editor, never faked. */
