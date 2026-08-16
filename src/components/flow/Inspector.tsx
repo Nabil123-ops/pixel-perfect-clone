@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Hint } from "@/components/flow/Hint";
 import { EndpointPanel } from "@/components/flow/EndpointPanel";
+import { PuterConnectButton } from "@/components/flow/PuterConnectButton";
 
 interface Props {
   node: StoredNode;
@@ -136,6 +137,13 @@ export function Inspector({
               )}
             </div>
           </Hint>
+
+          {kind === "puterModel" && !attachedNames.includes("Puter") && (
+            <PuterConnectButton
+              existingId={allCredentials.find((c) => c.name === "Puter")?.id}
+              onConnected={addCredential}
+            />
+          )}
 
           {attachedNames.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
