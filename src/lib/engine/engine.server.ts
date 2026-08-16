@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { decryptJson } from "@/lib/crypto.server";
 import { resolveExpr } from "@/lib/flow/expressions";
+import { credentialTypeSpec } from "@/lib/flow/credentials";
 import type { Json, RunResult, RunStep, StoredEdge, StoredNode } from "@/lib/flow/types";
 import { getNode } from "@/lib/nodes/registry";
 import type {
@@ -92,8 +93,10 @@ const connOf = (edge: StoredEdge): ConnType => {
 };
 
 /**
- * Root nodes (Agent, Chain, Vector store) declare required typed inputs.
- * Returns a human-readable problem list — the run refuses to start when non-empty.
+ * Root nodes (Agent, Chain, Vector store) declare required typed inputs, and
+ * some nodes (AI models, vendor integrations) cannot do real work without a
+ * credential attached. Returns a human-readable problem list — the run
+ * refuses to start when non-empty, instead of failing deep inside execution.
  */
 export function validateGraph(nodes: StoredNode[], edges: StoredEdge[]): string[] {
   const problems: string[] = [];
@@ -105,6 +108,13 @@ export function validateGraph(nodes: StoredNode[], edges: StoredEdge[]): string[
       if (input.type === "main" || !input.required) continue;
       const wired = edges.some((e) => e.target === node.id && connOf(e) === input.type);
       if (!wired) problems.push(`${label} is missing a required ${input.label ?? input.type} connection`);
+    }
+    if (mod.credentialRequired) {
+      const hasCredential = Boolean(node.data.credentials?.length || node.data.credential);
+      if (!hasCredential) {
+        const typeName = mod.credentialType ? credentialTypeSpec(mod.credentialType).name : "credential";
+        problems.push(`${label} requires a ${typeName} credential — attach one in the inspector`);
+      }
     }
   }
   return problems;
