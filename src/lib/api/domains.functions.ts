@@ -77,8 +77,7 @@ const rowToDomain = (row: DomainRow): CustomDomain => ({
 export const listDomains = createServerFn({ method: "GET" })
   .middleware([withWorkspace])
   .handler(async ({ context }): Promise<CustomDomain[]> => {
-    const { data, error } = await context.supabase
-      .from("custom_domains")
+    const { data, error } = await domainsTable(context.supabase)
       .select("*")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false });
@@ -90,8 +89,7 @@ export const listDomains = createServerFn({ method: "GET" })
 export const getVerifiedDomain = createServerFn({ method: "GET" })
   .middleware([withWorkspace])
   .handler(async ({ context }): Promise<{ domain: string | null }> => {
-    const { data, error } = await context.supabase
-      .from("custom_domains")
+    const { data, error } = await domainsTable(context.supabase)
       .select("domain")
       .eq("user_id", context.userId)
       .eq("verified", true)
@@ -107,8 +105,7 @@ export const addDomain = createServerFn({ method: "POST" })
   .middleware([withWorkspace])
   .inputValidator((d: { domain: string }) => z.object({ domain: domainSchema }).parse(d))
   .handler(async ({ data, context }): Promise<CustomDomain> => {
-    const { data: row, error } = await context.supabase
-      .from("custom_domains")
+    const { data: row, error } = await domainsTable(context.supabase)
       .insert({ user_id: context.userId, domain: data.domain })
       .select("*")
       .single();
@@ -128,8 +125,7 @@ export const verifyDomain = createServerFn({ method: "POST" })
   .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<CustomDomain> => {
-    const { data: row, error } = await context.supabase
-      .from("custom_domains")
+    const { data: row, error } = await domainsTable(context.supabase)
       .select("*")
       .eq("id", data.id)
       .eq("user_id", context.userId)
@@ -162,8 +158,7 @@ export const verifyDomain = createServerFn({ method: "POST" })
     }
 
     const now = new Date().toISOString();
-    const { data: updated, error: updateError } = await context.supabase
-      .from("custom_domains")
+    const { data: updated, error: updateError } = await domainsTable(context.supabase)
       .update({
         verified: ok,
         verified_at: ok ? now : row.verified_at,
@@ -182,8 +177,7 @@ export const deleteDomain = createServerFn({ method: "POST" })
   .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase
-      .from("custom_domains")
+    const { error } = await domainsTable(context.supabase)
       .delete()
       .eq("id", data.id)
       .eq("user_id", context.userId);
