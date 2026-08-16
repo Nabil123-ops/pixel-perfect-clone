@@ -1,6 +1,7 @@
 import type { Json } from "@/lib/flow/types";
 import type { NodeContext, NodeModule } from "./types";
 import { getPath, main, parseJson } from "./types";
+import { apiKeyHeaders, mergeExtraHeaders } from "@/lib/flow/auth";
 
 /**
  * Retrieval-augmented generation building blocks: text splitting, embeddings
@@ -12,6 +13,9 @@ const credKey = (ctx: NodeContext) => {
   const cred = (ctx.credential ?? {}) as Record<string, string>;
   return cred['apiKey'] ?? cred['token'] ?? "";
 };
+
+/** Auth header for OpenAI-shaped provider APIs, honoring a custom header name/extra headers. */
+const credHeaders = (ctx: NodeContext) => apiKeyHeaders(ctx.credential as Record<string, string>);
 
 interface EmbeddingProvider {
   kind: string;
@@ -34,7 +38,7 @@ async function embedTexts(
   const res = await ctx.http({
     url,
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers: { ...credHeaders(ctx), "Content-Type": "application/json" },
     body: JSON.stringify({ model, input: texts }),
   });
   if (!res.ok) throw new Error(`Embeddings request failed (${res.status}): ${JSON.stringify(res.body)}`);
@@ -52,6 +56,7 @@ function embeddingNode(provider: EmbeddingProvider): NodeModule {
     icon: provider.icon,
     subType: "ai_embedding",
     credentialType: "apiKey",
+    credentialRequired: true,
     keywords: ["embedding", "vector", "rag", provider.name.toLowerCase()],
     outputs: [{ handle: "ai_embedding", label: "Embedding" }],
     fields: [
@@ -121,6 +126,7 @@ export const cohereEmbeddings: NodeModule = {
   icon: "cohere",
   subType: "ai_embedding",
   credentialType: "apiKey",
+  credentialRequired: true,
   keywords: ["embedding", "cohere", "vector", "rag"],
   outputs: [{ handle: "ai_embedding", label: "Embedding" }],
   fields: [
@@ -137,7 +143,7 @@ export const cohereEmbeddings: NodeModule = {
     const res = await ctx.http({
       url: "https://api.cohere.com/v2/embed",
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: { ...mergeExtraHeaders(ctx.credential as Record<string, string>, { Authorization: `Bearer ${key}` }), "Content-Type": "application/json" },
       body: JSON.stringify({
         model: ctx.params.model,
         input_type: ctx.params.inputType,
@@ -235,6 +241,7 @@ export const pineconeStore: NodeModule = {
   description: "Upsert and query vectors in a Pinecone index.",
   icon: "pinecone",
   credentialType: "apiKey",
+  credentialRequired: true,
   inputs: [{ type: "ai_embedding", label: "Embedding" }],
   keywords: ["vector", "pinecone", "rag", "similarity"],
   outputs: [{ handle: "main", label: "" }],
@@ -258,7 +265,10 @@ export const pineconeStore: NodeModule = {
     if (!host) throw new Error("Pinecone index host is required");
     const op = String(ctx.params.operation ?? "query");
     const namespace = String(ctx.params.namespace ?? "");
-    const headers = { "Api-Key": key, "Content-Type": "application/json" };
+    const headers = mergeExtraHeaders(ctx.credential as Record<string, string>, {
+      "Api-Key": key,
+      "Content-Type": "application/json",
+    });
     const vectorField = String(ctx.params.vectorField || "embedding");
 
     if (op === "insert") {
@@ -329,6 +339,7 @@ export const qdrantStore: NodeModule = {
   description: "Upsert and search points in a Qdrant collection.",
   icon: "qdrant",
   credentialType: "apiKey",
+  credentialRequired: true,
   inputs: [{ type: "ai_embedding", label: "Embedding" }],
   keywords: ["vector", "qdrant", "rag", "similarity"],
   outputs: [{ handle: "main", label: "" }],
@@ -349,7 +360,10 @@ export const qdrantStore: NodeModule = {
   execute: async (ctx) => {
     const base = String(ctx.params.baseUrl ?? "").replace(/\/$/, "");
     const collection = String(ctx.params.collection || "documents");
-    const headers = { "api-key": credKey(ctx), "Content-Type": "application/json" };
+    const headers = mergeExtraHeaders(ctx.credential as Record<string, string>, {
+      "api-key": credKey(ctx),
+      "Content-Type": "application/json",
+    });
     const op = String(ctx.params.operation ?? "query");
     const vectorField = String(ctx.params.vectorField || "embedding");
 
@@ -418,6 +432,7 @@ export const supabaseVectorStore: NodeModule = {
   description: "Store vectors in a pgvector table and search with a match RPC.",
   icon: "supabase",
   credentialType: "apiKey",
+  credentialRequired: true,
   inputs: [{ type: "ai_embedding", label: "Embedding" }],
   keywords: ["vector", "pgvector", "supabase", "rag"],
   outputs: [{ handle: "main", label: "" }],
@@ -440,7 +455,11 @@ export const supabaseVectorStore: NodeModule = {
   execute: async (ctx) => {
     const key = credKey(ctx);
     const base = String(ctx.params.projectUrl ?? "").replace(/\/$/, "");
-    const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+    const headers = mergeExtraHeaders(ctx.credential as Record<string, string>, {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    });
     const op = String(ctx.params.operation ?? "query");
     const vectorField = String(ctx.params.vectorField || "embedding");
 
@@ -487,6 +506,7 @@ export const weaviateStore: NodeModule = {
   description: "Insert objects and run nearVector search in Weaviate.",
   icon: "weaviate",
   credentialType: "bearer",
+  credentialRequired: true,
   inputs: [{ type: "ai_embedding", label: "Embedding" }],
   keywords: ["vector", "weaviate", "rag"],
   outputs: [{ handle: "main", label: "" }],
@@ -506,7 +526,10 @@ export const weaviateStore: NodeModule = {
   },
   execute: async (ctx) => {
     const base = String(ctx.params.baseUrl ?? "").replace(/\/$/, "");
-    const headers = { Authorization: `Bearer ${credKey(ctx)}`, "Content-Type": "application/json" };
+    const headers = mergeExtraHeaders(ctx.credential as Record<string, string>, {
+      Authorization: `Bearer ${credKey(ctx)}`,
+      "Content-Type": "application/json",
+    });
     const className = String(ctx.params.className || "Document");
     const vectorField = String(ctx.params.vectorField || "embedding");
 
@@ -598,6 +621,7 @@ export const reranker: NodeModule = {
   description: "Re-order retrieved documents by relevance to a query.",
   icon: "cohere",
   credentialType: "apiKey",
+  credentialRequired: true,
   keywords: ["rerank", "relevance", "rag", "search"],
   outputs: [{ handle: "main", label: "" }],
   fields: [
@@ -615,12 +639,10 @@ export const reranker: NodeModule = {
     const res = await ctx.http({
       url: "https://api.cohere.com/v2/rerank",
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: ctx.params.model,
-        query: String(ctx.expr(ctx.params.query, ctx.items[0] ?? {}, 0) ?? ""),
-        documents,
-        top_n: Number(ctx.params.topN ?? 5),
+      headers: mergeExtraHeaders(ctx.credential as Record<string, string>, {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      }),
       }),
     });
     if (!res.ok) throw new Error(`Rerank failed (${res.status})`);
