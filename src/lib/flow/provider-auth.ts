@@ -17,6 +17,17 @@ export interface ProviderAuthGuide {
 
 export const PROVIDER_AUTH: ProviderAuthGuide[] = [
   {
+    kinds: ["puterModel"],
+    label: "Puter.js (no API key — free token)",
+    credentialType: "apiKey",
+    headerName: "Authorization",
+    valueFormat:
+      "Your Puter auth token (no \"Bearer \" prefix — added automatically). Free — not a paid API key.",
+    endpoint: "https://api.puter.com/puterai/openai/v1/chat/completions",
+    testUrl: "https://api.puter.com/puterai/openai/v1/models",
+    getKeyAt: "puter.com/dashboard → API Tokens → Create token (free, no billing)",
+  },
+  {
     kinds: ["openAiModel", "openAiCodexModel", "openAiEmbeddings"],
     label: "OpenAI (ChatGPT / Codex)",
     credentialType: "apiKey",
