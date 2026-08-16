@@ -12,7 +12,6 @@ import {
 
 import { PageHeader, Shell } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
-import { CreateWithAIDialog } from "@/components/CreateWithAIDialog";
 import { listExecutions } from "@/lib/api/executions.functions";
 import { listWorkflows, saveWorkflow } from "@/lib/api/workflows.functions";
 import { TEMPLATES, blankWorkflow, workflowFromTemplate } from "@/lib/flow/templates";
@@ -94,17 +93,6 @@ function Overview() {
             <Button size="sm" onClick={() => void create()}>
               <Plus className="mr-1.5 size-4" /> Create workflow
             </Button>
-            <CreateWithAIDialog
-              trigger={
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-br from-primary to-accent text-primary-foreground hover:opacity-90"
-                >
-                  <Sparkles className="mr-1.5 size-4" /> Create with AI
-                </Button>
-              }
-              onCreated={(id) => void navigate({ to: "/workflow/$id", params: { id } })}
-            />
           </div>
         }
       />
