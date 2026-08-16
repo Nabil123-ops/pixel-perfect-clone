@@ -220,8 +220,10 @@ function CredentialsPage() {
           <h2 className="font-display text-sm font-semibold">How to add a header</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Pick the credential type, paste the key, and set <span className="font-mono">Header name</span>{" "}
-            to one of the schemes below. The engine sends it verbatim on every request the node makes —
-            the <span className="font-mono">Bearer</span> scheme is recommended unless the provider docs say otherwise.
+            to one of the schemes below. Only <span className="font-mono">Authorization</span> gets an
+            automatic <span className="font-mono">Bearer</span> prefix — every other header is sent exactly
+            as typed. Need several headers at once? Use the "Custom header(s)" credential type below, or
+            the "Extra headers (JSON)" field on any credential.
           </p>
           <ul className="mt-3 grid gap-2 md:grid-cols-2">
             {HEADER_PRESETS.map((p) => (
@@ -362,14 +364,23 @@ function CredentialCard({
             />
             {f.key === "headerName" && (
               <p className="text-[10px] text-muted-foreground">
-                Recommended: <span className="font-mono text-foreground">Authorization</span> with{" "}
-                <span className="font-mono text-foreground">Bearer &lt;key&gt;</span>. Other common
-                choices: x-api-key, api-key, apikey.
+                Recommended: <span className="font-mono text-foreground">Authorization</span> — the
+                engine adds the <span className="font-mono text-foreground">Bearer</span> prefix
+                automatically, so just paste the raw key above. Other common headers (x-api-key,
+                api-key, apikey) are sent exactly as typed, with no prefix.
               </p>
             )}
           </div>
 
         ))}
+        {credential.type === "apiKey" && !fields["headerName"] && !credential.fields["headerName"] && (
+          <p className="-mt-2 text-[10px] text-muted-foreground">
+            Need more than one header? Use the{" "}
+            <span className="font-mono text-foreground">Extra headers (JSON)</span> field above, or
+            switch to the <span className="font-mono text-foreground">Custom header(s)</span> credential
+            type for several arbitrary headers with no assumed scheme.
+          </p>
+        )}
         <datalist id="n9n-header-names">
           {HEADER_NAME_OPTIONS.map((h) => (
             <option key={h} value={h} />
