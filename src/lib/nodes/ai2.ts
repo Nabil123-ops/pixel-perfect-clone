@@ -1,255 +1,275 @@
+import type { Json } from "@/lib/flow/types";
 import type { NodeModule } from "./types";
-import { modelNode } from "./ai";
+import { getPath, main, parseJson } from "./types";
+import { apiKeyHeaders } from "@/lib/flow/auth";
 
 /**
- * Additional chat-model sub-nodes. Each one publishes provider config that the
- * Agent / Chain root nodes consume through the `ai_languageModel` connection,
- * and every provider below speaks the OpenAI-compatible chat completions shape
- * unless marked otherwise.
+ * Extra agent tools and AI utility nodes. Tool sub-nodes attach to an Agent
+ * through the `ai_tool` connection; utility nodes run inline in the data flow.
  */
 
-export const googleModel = modelNode({
-  kind: "googleGeminiModel",
-  name: "Google Gemini Chat Model",
-  icon: "googlegemini",
-  description: "Gemini models through Google's OpenAI-compatible endpoint.",
-  models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
-  baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+function toolNode(opts: {
+  kind: string;
+  name: string;
+  icon: string;
+  description: string;
+  fields: NodeModule["fields"];
+  defaults: NodeModule["defaults"];
+  credentialType?: NonNullable<NodeModule["credentialType"]>;
+  credentialRequired?: boolean;
+  run: NodeModule["execute"];
+}): NodeModule {
+  return {
+    kind: opts.kind,
+    name: opts.name,
+    group: "AI Tools",
+    description: opts.description,
+    icon: opts.icon,
+    subType: "ai_tool",
+    ...(opts.credentialType ? { credentialType: opts.credentialType } : {}),
+    ...(opts.credentialRequired ? { credentialRequired: true } : {}),
+    keywords: ["tool", "agent", opts.name.toLowerCase()],
+    outputs: [{ handle: "ai_tool", label: "Tool" }],
+    fields: [
+      { key: "toolName", label: "Tool name (shown to the model)", type: "text" },
+      { key: "toolDescription", label: "Tool description", type: "textarea" },
+      ...opts.fields,
+    ],
+    defaults: { toolName: opts.kind, toolDescription: opts.description, ...opts.defaults },
+    execute: opts.run,
+  };
+}
+
+export const webSearchTool = toolNode({
+  kind: "webSearchTool",
+  name: "Web Search Tool",
+  icon: "search",
+  description: "Lets the agent search the live web (Tavily).",
   credentialType: "apiKey",
+  credentialRequired: true,
+  fields: [{ key: "maxResults", label: "Max results", type: "number" }],
+  defaults: { maxResults: 5 },
+  run: async (ctx) => {
+    const query = String(getPath(ctx.items[0] ?? {}, "query") ?? ctx.expr("{{ $json.query }}", ctx.items[0] ?? {}, 0) ?? "");
+    const cred = (ctx.credential ?? {}) as Record<string, string>;
+    if (!(cred['apiKey'] ?? cred['token'])) throw new Error("Missing Tavily API key — attach a credential");
+    const res = await ctx.http({
+      url: "https://api.tavily.com/search",
+      method: "POST",
+      headers: {
+        ...apiKeyHeaders(cred, { defaultHeaderName: "Authorization" }),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, max_results: Number(ctx.params.maxResults ?? 5) }),
+    });
+    if (!res.ok) throw new Error(`Search failed (${res.status})`);
+    return main(((getPath(res.body, "results") ?? []) as Json[]).slice(0, Number(ctx.params.maxResults ?? 5)));
+  },
 });
 
-export const mistralModel = modelNode({
-  kind: "mistralModel",
-  name: "Mistral Chat Model",
-  icon: "mistralai",
-  description: "Mistral Large / Small models.",
-  models: ["mistral-large-latest", "mistral-small-latest", "open-mistral-nemo"],
-  baseUrl: "https://api.mistral.ai/v1/chat/completions",
-  credentialType: "apiKey",
+export const scrapeTool = toolNode({
+  kind: "webScrapeTool",
+  name: "Web Page Tool",
+  icon: "globe",
+  description: "Fetches a URL and returns its readable text to the agent.",
+  fields: [{ key: "url", label: "URL", type: "text", placeholder: "{{ $json.url }}" }],
+  defaults: { url: "{{ $json.url }}" },
+  run: async (ctx) => {
+    const url = String(ctx.expr(ctx.params.url, ctx.items[0] ?? {}, 0) ?? "");
+    const res = await ctx.http({ url, method: "GET" });
+    const html = typeof res.body === "string" ? res.body : JSON.stringify(res.body);
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return main([{ url, status: res.status, text: text.slice(0, 20000) }]);
+  },
 });
 
-export const deepseekModel = modelNode({
-  kind: "deepseekModel",
-  name: "DeepSeek Chat Model",
-  icon: "deepseek",
-  description: "DeepSeek chat and reasoning models.",
-  models: ["deepseek-chat", "deepseek-reasoner"],
-  baseUrl: "https://api.deepseek.com/chat/completions",
-  credentialType: "apiKey",
+export const codeTool = toolNode({
+  kind: "codeTool",
+  name: "Code Tool",
+  icon: "terminal",
+  description: "Runs a sandboxed JavaScript snippet the agent can call with arguments.",
+  fields: [{ key: "code", label: "JavaScript (receives `args`, returns a value)", type: "code" }],
+  defaults: { code: "return args.a + args.b;" },
+  run: (ctx) => {
+    const args = (ctx.items[0] ?? {}) as Json;
+    const fn = new Function("args", String(ctx.params.code ?? "return null;"));
+    return main([{ result: fn(args) as Json }]);
+  },
 });
 
-export const xaiModel = modelNode({
-  kind: "xaiModel",
-  name: "xAI Grok Chat Model",
-  icon: "x",
-  description: "Grok models from xAI.",
-  models: ["grok-4", "grok-3", "grok-3-mini"],
-  baseUrl: "https://api.x.ai/v1/chat/completions",
-  credentialType: "apiKey",
+export const vectorStoreTool = toolNode({
+  kind: "vectorStoreTool",
+  name: "Knowledge Base Tool",
+  icon: "book",
+  description: "Lets the agent search a connected vector store for context.",
+  fields: [
+    { key: "topK", label: "Top K", type: "number" },
+    { key: "textField", label: "Text field", type: "text" },
+  ],
+  defaults: { topK: 4, textField: "text" },
+  run: async (ctx) => {
+    const store = ctx.subNodes.ai_vectorStore?.[0];
+    if (!store) throw new Error("Connect a vector store to this tool");
+    const results = await store.invoke(ctx.items);
+    return main(results.slice(0, Number(ctx.params.topK ?? 4)));
+  },
 });
 
-export const cohereModel = modelNode({
-  kind: "cohereModel",
-  name: "Cohere Chat Model",
-  icon: "cohere",
-  description: "Cohere Command models.",
-  models: ["command-r-plus", "command-r", "command-a-03-2025"],
-  baseUrl: "https://api.cohere.ai/compatibility/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const perplexityModel = modelNode({
-  kind: "perplexityModel",
-  name: "Perplexity Chat Model",
-  icon: "perplexity",
-  description: "Perplexity Sonar models with built-in web search.",
-  models: ["sonar", "sonar-pro", "sonar-reasoning"],
-  baseUrl: "https://api.perplexity.ai/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const togetherModel = modelNode({
-  kind: "togetherModel",
-  name: "Together AI Chat Model",
-  icon: "together",
-  description: "Open models hosted on Together AI.",
-  models: ["meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen2.5-72B-Instruct-Turbo"],
-  baseUrl: "https://api.together.xyz/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const fireworksModel = modelNode({
-  kind: "fireworksModel",
-  name: "Fireworks Chat Model",
-  icon: "fireworks",
-  description: "Fast open-model inference on Fireworks AI.",
-  models: ["accounts/fireworks/models/llama-v3p3-70b-instruct", "accounts/fireworks/models/qwen2p5-72b-instruct"],
-  baseUrl: "https://api.fireworks.ai/inference/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const ollamaModel = modelNode({
-  kind: "ollamaModel",
-  name: "Ollama Chat Model",
-  icon: "ollama",
-  description: "Local models served by Ollama (set the base URL to your host).",
-  models: ["llama3.2", "qwen2.5", "mistral", "phi4"],
-  baseUrl: "http://localhost:11434/v1/chat/completions",
-});
-
-export const azureOpenAiModel = modelNode({
-  kind: "azureOpenAiModel",
-  name: "Azure OpenAI Chat Model",
-  icon: "microsoftazure",
-  description: "Azure-hosted OpenAI deployments — set the deployment URL as base URL.",
-  models: ["gpt-4o", "gpt-4o-mini", "gpt-4.1"],
-  baseUrl: "https://YOUR-RESOURCE.openai.azure.com/openai/deployments/DEPLOYMENT/chat/completions?api-version=2024-10-21",
-  credentialType: "apiKey",
-});
-
-export const bedrockModel = modelNode({
-  kind: "bedrockModel",
-  name: "Amazon Bedrock Chat Model",
-  icon: "amazonaws",
-  description: "Anthropic and Llama models on Bedrock via an OpenAI-compatible proxy URL.",
-  models: ["anthropic.claude-sonnet-4-5", "meta.llama3-3-70b-instruct-v1:0"],
-  baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const cerebrasModel = modelNode({
-  kind: "cerebrasModel",
-  name: "Cerebras Chat Model",
-  icon: "cerebras",
-  description: "Very high throughput inference on Cerebras.",
-  models: ["llama-3.3-70b", "llama3.1-8b"],
-  baseUrl: "https://api.cerebras.ai/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const moonshotModel = modelNode({
-  kind: "moonshotModel",
-  name: "Kimi K3 (Moonshot) Chat Model",
+export const sentimentAnalysis: NodeModule = {
+  kind: "sentimentAnalysis",
+  name: "Sentiment Analysis",
+  group: "AI",
+  description: "Classify each item's text as positive, neutral or negative with a score.",
   icon: "brain",
-  description: "Kimi K3 / K2 long-context models from Moonshot AI. Header: Authorization: Bearer sk-…",
-  models: ["kimi-k3", "kimi-k2-turbo-preview", "kimi-k2-0905-preview", "moonshot-v1-128k"],
-  baseUrl: "https://api.moonshot.ai/v1/chat/completions",
-  credentialType: "apiKey",
-});
+  inputs: [{ type: "ai_languageModel", label: "Model", required: true }],
+  keywords: ["sentiment", "tone", "classify", "nlp"],
+  outputs: [
+    { handle: "main", label: "positive" },
+    { handle: "neutral", label: "neutral" },
+    { handle: "negative", label: "negative" },
+  ],
+  fields: [
+    { key: "textField", label: "Text field", type: "text" },
+    { key: "systemPrompt", label: "System prompt", type: "textarea" },
+  ],
+  defaults: {
+    textField: "text",
+    systemPrompt: "You classify sentiment. Reply with JSON only.",
+  },
+  execute: async (ctx) => {
+    const out: Record<string, Json[]> = { main: [], neutral: [], negative: [] };
+    for (const item of ctx.items) {
+      const text = String(getPath(item, String(ctx.params.textField || "text")) ?? "");
+      const res = await ctx.chat({
+        messages: [
+          { role: "system", content: String(ctx.params.systemPrompt ?? "") },
+          {
+            role: "user",
+            content: `Classify the sentiment of this text. Respond as {"sentiment":"positive|neutral|negative","score":0-1}.\n\n${text}`,
+          },
+        ],
+        jsonSchema: {
+          type: "object",
+          required: ["sentiment", "score"],
+          properties: {
+            sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
+            score: { type: "number" },
+          },
+        },
+      });
+      const parsed = parseJson(res.text, { sentiment: "neutral", score: 0 }) as Record<string, Json>;
+      const label = String(parsed['sentiment'] ?? "neutral");
+      const enriched = { ...(item as Record<string, Json>), sentiment: label, sentimentScore: parsed['score'] ?? null };
+      out[label === "positive" ? "main" : label === "negative" ? "negative" : "neutral"]!.push(enriched);
+    }
+    return out;
+  },
+};
 
-export const openAiCodexModel = modelNode({
-  kind: "openAiCodexModel",
-  name: "OpenAI Codex (ChatGPT) Model",
-  icon: "openai",
-  description: "Codex coding models for engineering and refactoring tasks.",
-  models: ["gpt-5.1-codex", "gpt-5-codex", "o4-mini"],
-  baseUrl: "https://api.openai.com/v1/chat/completions",
-  credentialType: "apiKey",
-});
+export const summarizeChain: NodeModule = {
+  kind: "summarizeChain",
+  name: "Summarization Chain",
+  group: "AI",
+  description: "Summarize long text by mapping over chunks and reducing to one summary.",
+  icon: "sparkles",
+  inputs: [{ type: "ai_languageModel", label: "Model", required: true }],
+  keywords: ["summary", "summarize", "map reduce", "condense"],
+  outputs: [{ handle: "main", label: "" }],
+  fields: [
+    { key: "textField", label: "Text field", type: "text" },
+    { key: "chunkSize", label: "Chunk size (characters)", type: "number" },
+    { key: "instruction", label: "Instruction", type: "textarea" },
+  ],
+  defaults: {
+    textField: "text",
+    chunkSize: 6000,
+    instruction: "Write a concise summary capturing the key points.",
+  },
+  execute: async (ctx) => {
+    const size = Math.max(500, Number(ctx.params.chunkSize ?? 6000));
+    const out: Json[] = [];
+    for (const item of ctx.items) {
+      const text = String(getPath(item, String(ctx.params.textField || "text")) ?? "");
+      const chunks: string[] = [];
+      for (let i = 0; i < text.length; i += size) chunks.push(text.slice(i, i + size));
+      const partials: string[] = [];
+      for (const chunk of chunks) {
+        const res = await ctx.chat({
+          messages: [
+            { role: "system", content: String(ctx.params.instruction ?? "") },
+            { role: "user", content: chunk },
+          ],
+        });
+        partials.push(res.text);
+      }
+      const summary =
+        partials.length > 1
+          ? (
+              await ctx.chat({
+                messages: [
+                  { role: "system", content: String(ctx.params.instruction ?? "") },
+                  { role: "user", content: `Combine these partial summaries into one:\n\n${partials.join("\n\n")}` },
+                ],
+              })
+            ).text
+          : (partials[0] ?? "");
+      ctx.log(`Summarized ${chunks.length} chunk(s)`);
+      out.push({ ...(item as Record<string, Json>), summary });
+    }
+    return main(out);
+  },
+};
 
-export const zhipuModel = modelNode({
-  kind: "zhipuModel",
-  name: "Zhipu GLM Chat Model",
-  icon: "cpu",
-  description: "GLM-4 family models from Zhipu AI.",
-  models: ["glm-4.6", "glm-4-plus", "glm-4-air"],
-  baseUrl: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-  credentialType: "apiKey",
-});
+export const questionAnswer: NodeModule = {
+  kind: "questionAnswerChain",
+  name: "Question & Answer Chain",
+  group: "AI",
+  description: "Answer a question strictly from retrieved context items.",
+  icon: "book",
+  inputs: [
+    { type: "ai_languageModel", label: "Model", required: true },
+    { type: "ai_vectorStore", label: "Vector Store" },
+  ],
+  keywords: ["rag", "qa", "answer", "context", "retrieval"],
+  outputs: [{ handle: "main", label: "" }],
+  fields: [
+    { key: "question", label: "Question", type: "text", placeholder: "{{ $json.question }}" },
+    { key: "contextField", label: "Context field on items", type: "text" },
+    { key: "systemPrompt", label: "System prompt", type: "textarea" },
+  ],
+  defaults: {
+    question: "{{ $json.question }}",
+    contextField: "text",
+    systemPrompt: "Answer using only the provided context. If the answer is not there, say you don't know.",
+  },
+  execute: async (ctx) => {
+    const question = String(ctx.expr(ctx.params.question, ctx.items[0] ?? {}, 0) ?? "");
+    const store = ctx.subNodes.ai_vectorStore?.[0];
+    const contextItems = store ? await store.invoke([{ query: question }]) : ctx.items;
+    const context = contextItems
+      .map((item, i) => `[${i + 1}] ${String(getPath(item, String(ctx.params.contextField || "text")) ?? "")}`)
+      .join("\n\n");
+    const res = await ctx.chat({
+      messages: [
+        { role: "system", content: String(ctx.params.systemPrompt ?? "") },
+        { role: "user", content: `Context:\n${context}\n\nQuestion: ${question}` },
+      ],
+    });
+    return main([{ question, answer: res.text, sources: contextItems.length }]);
+  },
+};
 
-
-export const nvidiaModel = modelNode({
-  kind: "nvidiaModel",
-  name: "NVIDIA NIM Chat Model",
-  icon: "nvidia",
-  description: "Models hosted on NVIDIA NIM / build.nvidia.com.",
-  models: ["meta/llama-3.3-70b-instruct", "nvidia/llama-3.1-nemotron-70b-instruct", "deepseek-ai/deepseek-r1"],
-  baseUrl: "https://integrate.api.nvidia.com/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const deepinfraModel = modelNode({
-  kind: "deepinfraModel",
-  name: "DeepInfra Chat Model",
-  icon: "deepinfra",
-  description: "Open-weight models served by DeepInfra.",
-  models: ["meta-llama/Llama-3.3-70B-Instruct", "Qwen/Qwen2.5-72B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"],
-  baseUrl: "https://api.deepinfra.com/v1/openai/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const sambanovaModel = modelNode({
-  kind: "sambanovaModel",
-  name: "SambaNova Chat Model",
-  icon: "sambanova",
-  description: "High-speed Llama inference on SambaNova Cloud.",
-  models: ["Meta-Llama-3.3-70B-Instruct", "Llama-3.1-405B-Instruct", "Qwen2.5-72B-Instruct"],
-  baseUrl: "https://api.sambanova.ai/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const githubModelsModel = modelNode({
-  kind: "githubModelsModel",
-  name: "GitHub Models Chat Model",
-  icon: "github",
-  description: "Models from the GitHub Models catalog using a GitHub token.",
-  models: ["gpt-4o", "gpt-4o-mini", "Meta-Llama-3.1-405B-Instruct"],
-  baseUrl: "https://models.inference.ai.azure.com/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const aimlapiModel = modelNode({
-  kind: "aimlapiModel",
-  name: "AI/ML API Chat Model",
-  icon: "cpu",
-  description: "Multi-provider catalogue through AI/ML API.",
-  models: ["gpt-4o", "claude-3-5-sonnet-20241022", "deepseek-chat"],
-  baseUrl: "https://api.aimlapi.com/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const qwenModel = modelNode({
-  kind: "qwenModel",
-  name: "Alibaba Qwen Chat Model",
-  icon: "alibabacloud",
-  description: "Qwen models on Alibaba DashScope (OpenAI-compatible mode).",
-  models: ["qwen-max", "qwen-plus", "qwen2.5-72b-instruct"],
-  baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const customOpenAiCompatibleModel = modelNode({
-  kind: "customOpenAiCompatibleModel",
-  name: "Custom OpenAI-Compatible Model",
-  icon: "plug",
-  description: "Any OpenAI-compatible endpoint — vLLM, LM Studio, LiteLLM, self-hosted gateways.",
-  models: ["custom-model"],
-  baseUrl: "https://your-endpoint.example.com/v1/chat/completions",
-  credentialType: "apiKey",
-});
-
-export const model2Nodes: NodeModule[] = [
-  googleModel,
-  mistralModel,
-  deepseekModel,
-  xaiModel,
-  cohereModel,
-  perplexityModel,
-  togetherModel,
-  fireworksModel,
-  ollamaModel,
-  azureOpenAiModel,
-  bedrockModel,
-  cerebrasModel,
-  moonshotModel,
-  openAiCodexModel,
-  zhipuModel,
-  nvidiaModel,
-  deepinfraModel,
-  sambanovaModel,
-  githubModelsModel,
-  aimlapiModel,
-  qwenModel,
-  customOpenAiCompatibleModel,
+export const aiTools2Nodes: NodeModule[] = [
+  webSearchTool,
+  scrapeTool,
+  codeTool,
+  vectorStoreTool,
+  sentimentAnalysis,
+  summarizeChain,
+  questionAnswer,
 ];
-
