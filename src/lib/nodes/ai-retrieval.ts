@@ -643,6 +643,11 @@ export const reranker: NodeModule = {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       }),
+      body: JSON.stringify({
+        model: ctx.params.model,
+        query: String(ctx.expr(ctx.params.query, ctx.items[0] ?? {}, 0) ?? ""),
+        documents,
+        top_n: Number(ctx.params.topN ?? 5),
       }),
     });
     if (!res.ok) throw new Error(`Rerank failed (${res.status})`);
