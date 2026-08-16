@@ -40,7 +40,7 @@ export function modelConfigFrom(sub: SubNodeRef | undefined): ModelConfig | null
     temperature: Number(p['temperature'] ?? 0.7),
     style: cfg['style'] === "anthropic" ? "anthropic" : "openai",
     systemPrompt: String(p['systemPrompt'] ?? ""),
-    maxTokens: p['maxTokens'] ? Number(p['maxTokens']) : undefined,
+    ...(p['maxTokens'] ? { maxTokens: Number(p['maxTokens']) } : {}),
   };
 }
 
