@@ -29,7 +29,7 @@ const domainSchema = z
 
 const recordNameFor = (domain: string) => `n9n-verify.${domain}`;
 
-const rowToDomain = (row: {
+interface DomainRow {
   id: string;
   domain: string;
   verification_token: string;
@@ -38,7 +38,30 @@ const rowToDomain = (row: {
   last_check_at: string | null;
   last_check_error: string | null;
   created_at: string;
-}): CustomDomain => ({
+}
+
+type Res<T> = { data: T; error: { message: string; code?: string } | null };
+
+/**
+ * `custom_domains` lives in a migration applied outside the generated type
+ * bundle, so we reach it through this narrow structural query type.
+ */
+interface DomainQuery extends PromiseLike<Res<DomainRow[] | null>> {
+  select(columns: string): DomainQuery;
+  insert(values: Record<string, unknown>): DomainQuery;
+  update(values: Record<string, unknown>): DomainQuery;
+  delete(): DomainQuery;
+  eq(column: string, value: unknown): DomainQuery;
+  order(column: string, opts?: { ascending?: boolean }): DomainQuery;
+  limit(n: number): DomainQuery;
+  maybeSingle(): Promise<Res<DomainRow | null>>;
+  single(): Promise<Res<DomainRow>>;
+}
+
+const domainsTable = (supabase: unknown): DomainQuery =>
+  (supabase as { from(table: string): DomainQuery }).from("custom_domains");
+
+const rowToDomain = (row: DomainRow): CustomDomain => ({
   id: row.id,
   domain: row.domain,
   verificationToken: row.verification_token,
@@ -54,8 +77,7 @@ const rowToDomain = (row: {
 export const listDomains = createServerFn({ method: "GET" })
   .middleware([withWorkspace])
   .handler(async ({ context }): Promise<CustomDomain[]> => {
-    const { data, error } = await context.supabase
-      .from("custom_domains")
+    const { data, error } = await domainsTable(context.supabase)
       .select("*")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false });
@@ -67,8 +89,7 @@ export const listDomains = createServerFn({ method: "GET" })
 export const getVerifiedDomain = createServerFn({ method: "GET" })
   .middleware([withWorkspace])
   .handler(async ({ context }): Promise<{ domain: string | null }> => {
-    const { data, error } = await context.supabase
-      .from("custom_domains")
+    const { data, error } = await domainsTable(context.supabase)
       .select("domain")
       .eq("user_id", context.userId)
       .eq("verified", true)
@@ -84,8 +105,7 @@ export const addDomain = createServerFn({ method: "POST" })
   .middleware([withWorkspace])
   .inputValidator((d: { domain: string }) => z.object({ domain: domainSchema }).parse(d))
   .handler(async ({ data, context }): Promise<CustomDomain> => {
-    const { data: row, error } = await context.supabase
-      .from("custom_domains")
+    const { data: row, error } = await domainsTable(context.supabase)
       .insert({ user_id: context.userId, domain: data.domain })
       .select("*")
       .single();
@@ -105,8 +125,7 @@ export const verifyDomain = createServerFn({ method: "POST" })
   .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<CustomDomain> => {
-    const { data: row, error } = await context.supabase
-      .from("custom_domains")
+    const { data: row, error } = await domainsTable(context.supabase)
       .select("*")
       .eq("id", data.id)
       .eq("user_id", context.userId)
@@ -139,8 +158,7 @@ export const verifyDomain = createServerFn({ method: "POST" })
     }
 
     const now = new Date().toISOString();
-    const { data: updated, error: updateError } = await context.supabase
-      .from("custom_domains")
+    const { data: updated, error: updateError } = await domainsTable(context.supabase)
       .update({
         verified: ok,
         verified_at: ok ? now : row.verified_at,
@@ -159,8 +177,7 @@ export const deleteDomain = createServerFn({ method: "POST" })
   .middleware([withWorkspace])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: true }> => {
-    const { error } = await context.supabase
-      .from("custom_domains")
+    const { error } = await domainsTable(context.supabase)
       .delete()
       .eq("id", data.id)
       .eq("user_id", context.userId);
