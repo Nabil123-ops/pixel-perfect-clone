@@ -301,15 +301,15 @@ export const TEMPLATES: Template[] = [
         },
       },
       {
-        kind: "groqModel",
+        kind: "deepseekModel",
         label: "Classifier Model",
         pos: { x: 600, y: 520 },
         params: {
-          model: "llama-3.1-8b-instant",
+          model: "deepseek-chat",
           temperature: 0,
           baseUrl: "",
           systemPrompt: "",
-          __config: { provider: "groqModel", style: "openai", baseUrl: "https://api.groq.com/openai/v1/chat/completions" },
+          __config: { provider: "deepseekModel", style: "openai", baseUrl: "https://api.deepseek.com/chat/completions" },
         },
       },
       {
@@ -359,16 +359,16 @@ export const TEMPLATES: Template[] = [
         },
       },
       {
-        kind: "anthropicModel",
+        kind: "deepseekModel",
         label: "Thinking Model",
         pos: { x: 1160, y: 500 },
         params: {
-          model: "claude-opus-4-1",
+          model: "deepseek-reasoner",
           temperature: 0.4,
           baseUrl: "",
           systemPrompt:
             "You are a careful reasoning and writing assistant. Think step by step, weigh trade-offs explicitly, and give a clear, well-structured final answer.",
-          __config: { provider: "anthropicModel", style: "anthropic", baseUrl: "https://api.anthropic.com/v1/messages" },
+          __config: { provider: "deepseekModel", style: "openai", baseUrl: "https://api.deepseek.com/chat/completions" },
         },
       },
       {
@@ -421,15 +421,19 @@ export const TEMPLATES: Template[] = [
         },
       },
       {
-        kind: "openAiModel",
+        kind: "googleGeminiModel",
         label: "General Model",
         pos: { x: 1160, y: 1060 },
         params: {
-          model: "gpt-5.1",
+          model: "gemini-2.5-flash",
           temperature: 0.6,
           baseUrl: "",
           systemPrompt: "You are a friendly, helpful general-purpose assistant. Keep answers clear and to the point.",
-          __config: { provider: "openAiModel", style: "openai", baseUrl: "https://api.openai.com/v1/chat/completions" },
+          __config: {
+            provider: "googleGeminiModel",
+            style: "openai",
+            baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          },
         },
       },
     ],
