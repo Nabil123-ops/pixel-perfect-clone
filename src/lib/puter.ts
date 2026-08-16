@@ -11,6 +11,15 @@ export interface PuterChatOptions {
   stream?: boolean;
 }
 
+export interface PuterSignInResult {
+  success: boolean;
+  /** The real, usable auth token — same shape as the one from puter.com/dashboard. */
+  token: string;
+  username?: string;
+  error?: string;
+  msg?: string;
+}
+
 interface PuterApi {
   ai: {
     chat: (
@@ -19,6 +28,14 @@ interface PuterApi {
       options?: PuterChatOptions,
     ) => Promise<unknown>;
   };
+  auth: {
+    signIn: (options?: { attempt_temp_user_creation?: boolean; request_auth?: boolean }) => Promise<PuterSignInResult>;
+    isSignedIn: () => boolean;
+    getUser: () => Promise<{ username: string; uuid: string }>;
+    signOut: () => void;
+  };
+  /** Set by the SDK itself once signed in — the exact string `signIn()` resolves with. */
+  authToken?: string | null;
   print?: unknown;
 }
 
@@ -29,13 +46,27 @@ declare global {
 }
 
 export const PUTER_MODELS = [
+  { id: "gpt-5.4-nano", label: "GPT-5.4 nano (OpenAI, fast & default)" },
+  { id: "gpt-5.5", label: "GPT-5.5 (OpenAI, flagship)" },
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (Anthropic)" },
+  { id: "claude-opus-4-8", label: "Claude Opus 4.8 (Anthropic)" },
+  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite (Google)" },
+  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (Google)" },
+  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Google)" },
   { id: "deepseek-chat", label: "DeepSeek Chat" },
   { id: "deepseek-reasoner", label: "DeepSeek Reasoner" },
-  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
 ] as const;
 
-export const DEFAULT_PUTER_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_PUTER_MODEL = "gpt-5.4-nano";
+
+/**
+ * Puter's OpenAI-compatible REST endpoint. Any OpenAI-shaped chat/completions
+ * client can hit this directly with `Authorization: Bearer <puter-token>` —
+ * this is what lets server-side workflow runs (which can't reach the browser
+ * SDK) use Puter too, with the same one-token-for-500-models story.
+ * See: https://developer.puter.com/tutorials/puter-auth-token/
+ */
+export const PUTER_OPENAI_CHAT_URL = "https://api.puter.com/puterai/openai/v1/chat/completions";
 
 const SRC = "https://js.puter.com/v2/";
 let loading: Promise<PuterApi> | null = null;
@@ -105,6 +136,24 @@ export async function puterChat(
   const text = textOf(res).trim();
   if (!text) throw new Error("The model returned an empty response");
   return text;
+}
+
+/**
+ * One-click Puter sign-in for the browser. Opens Puter's real auth popup
+ * (or, with `attempt_temp_user_creation`, silently issues a free instant
+ * account with no signup form at all) and hands back the resulting token —
+ * the same kind of token you'd otherwise have to copy from
+ * puter.com/dashboard by hand. Must be called from a user gesture (a click),
+ * since the popup would otherwise be blocked by the browser.
+ */
+export async function connectPuter(): Promise<{ token: string; username?: string }> {
+  const puter = await loadPuter();
+  const res = await puter.auth.signIn({ attempt_temp_user_creation: true });
+  const token = res.token || puter.authToken || "";
+  if (!res.success || !token) {
+    throw new Error(res.msg || res.error || "Puter sign-in did not return a token");
+  }
+  return { token, username: res.username };
 }
 
 /** Extracts the first JSON object/array from a model reply (handles ``` fences). */
