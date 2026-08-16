@@ -84,8 +84,7 @@ export function basicAuthHeaders(cred: Record<string, string> | undefined): Reco
   const c = cred ?? {};
   const headers: Record<string, string> = {};
   if (c["username"] || c["password"]) {
-    const encode = typeof btoa === "function" ? btoa : (s: string) => Buffer.from(s).toString("base64");
-    headers["Authorization"] = `Basic ${encode(`${c["username"] ?? ""}:${c["password"] ?? ""}`)}`;
+    headers["Authorization"] = `Basic ${btoa(`${c["username"] ?? ""}:${c["password"] ?? ""}`)}`;
   }
   return mergeExtraHeaders(c, headers);
 }
