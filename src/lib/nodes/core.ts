@@ -1,5 +1,6 @@
 import type { NodeModule } from "./types";
 import { getPath, main, parseJson, toItems } from "./types";
+import { headersFromCredentialFields } from "@/lib/flow/auth";
 
 export const httpRequest: NodeModule = {
   kind: "http",
@@ -48,9 +49,7 @@ export const httpRequest: NodeModule = {
         String(ctx.expr(typeof p.headers === "string" ? p.headers : "{}", item, i) || "{}"),
         {},
       ) as Record<string, string>;
-      if (ctx.credential.token) headers["Authorization"] = `Bearer ${ctx.credential.token}`;
-      if (ctx.credential.apiKey && ctx.credential.header)
-        headers[ctx.credential.header] = ctx.credential.apiKey;
+      Object.assign(headers, headersFromCredentialFields(ctx.credential as Record<string, string>));
       const url = String(ctx.expr(p.url, item, i));
       const res = await ctx.http({
         url,
