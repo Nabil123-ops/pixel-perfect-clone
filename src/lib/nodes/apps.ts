@@ -1,6 +1,7 @@
 import type { Json } from "@/lib/flow/types";
 import type { NodeContext, NodeGroup, NodeModule, ParamField } from "./types";
 import { getPath, main, parseJson, toItems } from "./types";
+import { mergeExtraHeaders } from "@/lib/flow/auth";
 
 /**
  * Shared factory for real REST integrations. Every operation performs a genuine
@@ -34,6 +35,13 @@ export interface AppSpec {
   credentialType: NonNullable<NodeModule["credentialType"]>;
   /** Turn a credential into request headers. */
   auth: (cred: Record<string, string>) => Record<string, string>;
+  /**
+   * Whether this integration cannot function without a stored credential.
+   * Defaults to true (virtually every vendor API needs one) — set to false
+   * for specs like PagerDuty where the secret travels in a per-operation
+   * field instead of a stored credential.
+   */
+  credentialRequired?: boolean;
   operations: AppOperation[];
   keywords?: string[];
   stub?: string;
@@ -104,6 +112,7 @@ export function createAppNode(spec: AppSpec): NodeModule {
     icon: spec.icon,
     keywords: [...(spec.keywords ?? []), spec.name.toLowerCase(), ...spec.operations.map((o) => o.label.toLowerCase())],
     credentialType: spec.credentialType,
+    credentialRequired: spec.credentialRequired ?? true,
     ...(spec.stub ? { stub: spec.stub } : {}),
     outputs: [{ handle: "main", label: "" }],
     fields,
@@ -136,7 +145,7 @@ export function createAppNode(spec: AppSpec): NodeModule {
         const url = `${base}${path}${qs ? `?${qs}` : ""}`;
         const bodyValue = op.body?.(resolved, item);
 
-        const headers: Record<string, string> = { ...spec.auth(cred) };
+        const headers: Record<string, string> = mergeExtraHeaders(cred, { ...spec.auth(cred) });
         let body: string | undefined;
         if (bodyValue !== undefined && op.method !== "GET") {
           if (op.form) {
@@ -395,6 +404,7 @@ export const pagerduty = createAppNode({
   icon: "pagerduty",
   baseUrl: "https://events.pagerduty.com",
   credentialType: "apiKey",
+  credentialRequired: false,
   auth: () => ({}),
   operations: [
     {
