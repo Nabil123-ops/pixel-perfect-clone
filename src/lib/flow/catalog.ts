@@ -21,6 +21,8 @@ export interface NodeSpec {
   defaults: Record<string, Json>;
   isTrigger: boolean;
   credentialType?: NodeModule["credentialType"];
+  /** True when this node cannot do real work without a credential attached. */
+  credentialRequired?: boolean;
   keywords: string[];
 }
 
@@ -37,6 +39,7 @@ const toSpec = (mod: NodeModule): NodeSpec => ({
   defaults: mod.defaults,
   isTrigger: Boolean(mod.isTrigger),
   ...(mod.credentialType ? { credentialType: mod.credentialType } : {}),
+  ...(mod.credentialRequired ? { credentialRequired: true } : {}),
   keywords: mod.keywords ?? [],
 });
 
