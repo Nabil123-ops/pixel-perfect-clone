@@ -22,7 +22,10 @@ export function testOrigin(): string {
 export type Env = "test" | "production";
 
 export function originFor(env: Env, customDomain?: string | null): string {
-  if (env === "production" && customDomain) return `https://${customDomain}`;
+  // A verified custom domain is the canonical origin for both environments —
+  // test just points at the same live domain instead of a separate preview
+  // origin. Falls back to the previous per-env origin when none is set.
+  if (customDomain) return `https://${customDomain}`;
   return env === "production" ? PRODUCTION_ORIGIN : testOrigin();
 }
 
