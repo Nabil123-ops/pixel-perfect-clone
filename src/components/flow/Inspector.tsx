@@ -58,7 +58,13 @@ export function Inspector({
 
   const attachedNames =
     node.data.credentials?.length ? node.data.credentials : node.data.credential ? [node.data.credential] : [];
-  const availableToAdd = allCredentials.filter((c) => !attachedNames.includes(c.name));
+  const availableToAdd = allCredentials
+    .filter((c) => !attachedNames.includes(c.name))
+    .sort((a, b) => {
+      const aMatch = a.type === spec.credentialType ? 0 : 1;
+      const bMatch = b.type === spec.credentialType ? 0 : 1;
+      return aMatch - bMatch;
+    });
 
   const setCredentials = (names: string[]) =>
     onChange({
@@ -121,7 +127,14 @@ export function Inspector({
             text="Attach as many stored credentials as this node needs. Their fields are merged for built-in auth, and every attached credential is also reachable individually as {{ $cred.Name.key }}."
             side="left"
           >
-            <Label className="cursor-help">Credentials</Label>
+            <div className="flex items-center gap-2">
+              <Label className="cursor-help">Credentials</Label>
+              {spec.credentialRequired && attachedNames.length === 0 && (
+                <Badge variant="destructive" className="text-[10px]">
+                  Required
+                </Badge>
+              )}
+            </div>
           </Hint>
 
           {attachedNames.length > 0 && (
