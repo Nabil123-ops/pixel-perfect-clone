@@ -20,23 +20,32 @@ export interface CredentialTypeSpec {
   } | null;
 }
 
+/** Shared by every type below: extra headers merged in on top of the type's own auth header. */
+const extraHeadersField: CredentialFieldSpec = {
+  key: "extraHeaders",
+  label: "Extra headers (JSON, optional)",
+  placeholder: '{ "X-Org-Id": "acme", "X-Client-Version": "1.0" }',
+};
+
 export const CREDENTIAL_TYPES: CredentialTypeSpec[] = [
   {
     type: "apiKey",
     name: "API key",
-    description: "A single key sent as a header or query parameter.",
+    description:
+      "A single secret sent in one header. Paste the raw key only — the engine adds \"Bearer \" automatically when the header is Authorization, and sends it raw otherwise.",
     fields: [
-      { key: "apiKey", label: "API key", secret: true },
-      { key: "headerName", label: "Header name", placeholder: "X-API-Key" },
+      { key: "apiKey", label: "API key", secret: true, placeholder: "sk-…  (no \"Bearer \" prefix)" },
+      { key: "headerName", label: "Header name", placeholder: "Authorization" },
+      extraHeadersField,
       { key: "testUrl", label: "Test URL (optional)", placeholder: "https://api.example.com/me" },
     ],
-    test: (f) =>
-      f["testUrl"]
-        ? {
-            url: f["testUrl"],
-            headers: { [f["headerName"] || "X-API-Key"]: f["apiKey"] ?? "" },
-          }
-        : null,
+    test: (f) => {
+      if (!f["testUrl"]) return null;
+      const headerName = f["headerName"] || "Authorization";
+      const value =
+        headerName.toLowerCase() === "authorization" ? `Bearer ${f["apiKey"] ?? ""}` : f["apiKey"] ?? "";
+      return { url: f["testUrl"], headers: { [headerName]: value } };
+    },
   },
   {
     type: "bearer",
@@ -44,6 +53,7 @@ export const CREDENTIAL_TYPES: CredentialTypeSpec[] = [
     description: "Sent as Authorization: Bearer <token>.",
     fields: [
       { key: "token", label: "Token", secret: true },
+      extraHeadersField,
       { key: "testUrl", label: "Test URL (optional)", placeholder: "https://api.example.com/me" },
     ],
     test: (f) =>
@@ -58,6 +68,7 @@ export const CREDENTIAL_TYPES: CredentialTypeSpec[] = [
     fields: [
       { key: "username", label: "Username" },
       { key: "password", label: "Password", secret: true },
+      extraHeadersField,
       { key: "testUrl", label: "Test URL (optional)" },
     ],
     test: (f) =>
@@ -82,6 +93,7 @@ export const CREDENTIAL_TYPES: CredentialTypeSpec[] = [
       { key: "scope", label: "Scope" },
       { key: "accessToken", label: "Access token", secret: true },
       { key: "refreshToken", label: "Refresh token", secret: true },
+      extraHeadersField,
       { key: "testUrl", label: "Test URL (optional)" },
     ],
     test: (f) =>
@@ -94,6 +106,35 @@ export const CREDENTIAL_TYPES: CredentialTypeSpec[] = [
     name: "Webhook URL",
     description: "An incoming webhook URL such as a Slack or Discord hook.",
     fields: [{ key: "url", label: "Webhook URL", secret: true }],
+  },
+  {
+    type: "customHeader",
+    name: "Custom header(s)",
+    description:
+      "Send whatever headers an API needs — no assumed scheme. Fill in as many name/value pairs as you need and leave the rest blank.",
+    fields: [
+      { key: "header1Name", label: "Header 1 name", placeholder: "X-Api-Key" },
+      { key: "header1Value", label: "Header 1 value", secret: true },
+      { key: "header2Name", label: "Header 2 name (optional)" },
+      { key: "header2Value", label: "Header 2 value (optional)", secret: true },
+      { key: "header3Name", label: "Header 3 name (optional)" },
+      { key: "header3Value", label: "Header 3 value (optional)", secret: true },
+      { key: "header4Name", label: "Header 4 name (optional)" },
+      { key: "header4Value", label: "Header 4 value (optional)", secret: true },
+      { key: "header5Name", label: "Header 5 name (optional)" },
+      { key: "header5Value", label: "Header 5 value (optional)", secret: true },
+      { key: "testUrl", label: "Test URL (optional)" },
+    ],
+    test: (f) => {
+      if (!f["testUrl"]) return null;
+      const headers: Record<string, string> = {};
+      for (let i = 1; i <= 5; i++) {
+        const name = f[`header${i}Name`];
+        const value = f[`header${i}Value`];
+        if (name && value) headers[name] = value;
+      }
+      return { url: f["testUrl"], headers };
+    },
   },
 ];
 
