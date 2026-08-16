@@ -1,6 +1,7 @@
 import type { Json } from "@/lib/flow/types";
 import type { NodeModule } from "../types";
 import { main, parseJson } from "../types";
+import { mergeExtraHeaders } from "@/lib/flow/auth";
 
 const API = "https://slack.com/api";
 
@@ -45,7 +46,10 @@ export const slack: NodeModule = {
     const p = ctx.params;
     const op = String(p.operation ?? "postMessage");
     const token = ctx.credential.token ?? ctx.credential.apiKey ?? "";
-    const auth = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+    const auth = mergeExtraHeaders(ctx.credential as Record<string, string>, {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    });
     const out: Json[] = [];
 
     if (op === "listChannels") {
