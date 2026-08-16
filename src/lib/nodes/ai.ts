@@ -1,6 +1,7 @@
 import type { Json } from "@/lib/flow/types";
 import type { ChatMessage, ChatToolDef, NodeModule } from "./types";
 import { getPath, main, parseJson, toItems } from "./types";
+import { headersFromCredentialFields } from "@/lib/flow/auth";
 
 /**
  * AI sub-nodes carry no execution of their own — they publish provider config
@@ -30,10 +31,11 @@ export function modelNode(opts: {
     subType: "ai_languageModel",
     keywords: ["model", "llm", "chat", opts.name.toLowerCase()],
     outputs: [{ handle: "ai_languageModel", label: "Model" }],
-    ...(opts.credentialType ? { credentialType: opts.credentialType } : {}),
+    ...(opts.credentialType ? { credentialType: opts.credentialType, credentialRequired: !opts.baseUrl?.startsWith("http://localhost") } : {}),
     fields: [
       { key: "model", label: "Model", type: "select", options: opts.models },
       { key: "temperature", label: "Temperature", type: "number" },
+      { key: "maxTokens", label: "Max output tokens (optional)", type: "number", placeholder: "4096" },
       { key: "baseUrl", label: "Custom base URL (optional)", type: "text" },
       {
         key: "systemPrompt",
@@ -45,6 +47,7 @@ export function modelNode(opts: {
     defaults: {
       model: opts.models[0]!,
       temperature: 0.7,
+      maxTokens: "",
       baseUrl: "",
       systemPrompt: "",
       __config: config,
@@ -145,10 +148,7 @@ export const httpTool: NodeModule = {
     const query = String(getPath(ctx.items[0] ?? {}, "query") ?? "");
     const url = String(ctx.params.url ?? "").replace(/\{query\}/g, encodeURIComponent(query));
     const bodyTemplate = String(ctx.params.bodyTemplate ?? "").replace(/\{query\}/g, query);
-    const cred = ctx.credential as Record<string, string>;
-    const headers: Record<string, string> = {};
-    if (cred['token'] || cred['apiKey'])
-      headers['Authorization'] = `Bearer ${cred['token'] ?? cred['apiKey']}`;
+    const headers = headersFromCredentialFields(ctx.credential as Record<string, string>);
     const res = await ctx.http({
       url,
       method: String(ctx.params.method ?? "GET"),
