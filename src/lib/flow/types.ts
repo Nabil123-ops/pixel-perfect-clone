@@ -44,7 +44,13 @@ export interface Workflow {
   updatedAt: number;
 }
 
-export type CredentialType = "apiKey" | "bearer" | "basicAuth" | "oauth2" | "webhookUrl";
+export type CredentialType =
+  | "apiKey"
+  | "bearer"
+  | "basicAuth"
+  | "oauth2"
+  | "webhookUrl"
+  | "customHeader";
 
 export interface Credential {
   id: string;
