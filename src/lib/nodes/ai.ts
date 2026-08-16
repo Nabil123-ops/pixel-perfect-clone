@@ -2,6 +2,7 @@ import type { Json } from "@/lib/flow/types";
 import type { ChatMessage, ChatToolDef, NodeModule } from "./types";
 import { getPath, main, parseJson, toItems } from "./types";
 import { headersFromCredentialFields } from "@/lib/flow/auth";
+import { PUTER_MODELS, PUTER_OPENAI_CHAT_URL } from "@/lib/puter";
 
 /**
  * AI sub-nodes carry no execution of their own — they publish provider config
@@ -76,6 +77,32 @@ export const anthropicModel = modelNode({
   models: ["claude-sonnet-4-5", "claude-opus-4-1", "claude-haiku-4-5"],
   baseUrl: "https://api.anthropic.com/v1/messages",
   style: "anthropic",
+  credentialType: "apiKey",
+});
+
+/**
+ * Puter.js — one free token, 500+ models (GPT, Claude, Gemini, DeepSeek…),
+ * no OpenAI/Anthropic/Groq/... billing account needed. Puter exposes an
+ * OpenAI-compatible endpoint (`PUTER_OPENAI_CHAT_URL`), so this reuses the
+ * exact same `callOpenAiCompatible()` path every other "openai style" model
+ * above uses — no engine changes required for this to actually run.
+ *
+ * Get the token free at https://puter.com/dashboard → API Tokens → Create
+ * token, then paste it into this node's credential (still using the "API
+ * key" credential type — Puter's token *is* the bearer token).
+ *
+ * For pure client-side use with **zero token at all** (the browser's own
+ * Puter session covers it), see `src/lib/puter.ts` (`puterChat`) — that's
+ * what the in-app AI Builder chat panel already uses.
+ */
+export const puterModel = modelNode({
+  kind: "puterModel",
+  name: "Puter AI Model (No API Key)",
+  icon: "sparkles",
+  description:
+    "GPT, Claude, Gemini, DeepSeek & 500+ more via Puter.js — one free Puter token instead of separate paid provider keys. Get one at puter.com/dashboard.",
+  models: PUTER_MODELS.map((m) => m.id),
+  baseUrl: PUTER_OPENAI_CHAT_URL,
   credentialType: "apiKey",
 });
 
@@ -453,6 +480,7 @@ export const textClassifier: NodeModule = {
 };
 
 export const aiNodes = [
+  puterModel,
   openAiModel,
   anthropicModel,
   groqModel,
