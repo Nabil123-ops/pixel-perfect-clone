@@ -45,9 +45,20 @@ export function execUrl(
   return `${originFor(env, customDomain)}${execPath(workflowId, nodeId)}${query}`;
 }
 
+/** Real, hosted, styled test page for any node — form built from its actual field schema, executes for real. */
+export function nodeTestUrl(env: Env, workflowId: string, nodeId: string, key: string, customDomain?: string | null): string {
+  const query = key ? `?key=${encodeURIComponent(key)}` : "";
+  return `${originFor(env, customDomain)}/api/public/node/${workflowId}/${nodeId}${query}`;
+}
+
 /** Public webhook endpoint of a webhook trigger node. */
 export function webhookUrl(env: Env, workflowId: string, path: string, customDomain?: string | null): string {
   return `${originFor(env, customDomain)}/api/public/webhook/${workflowId}/${String(path).replace(/^\/+/, "")}`;
+}
+
+/** Real hosted form page of a form trigger node — opens as an actual fillable HTML form. */
+export function formUrl(env: Env, workflowId: string, path: string, customDomain?: string | null): string {
+  return `${originFor(env, customDomain)}/api/public/forms/${workflowId}/${String(path).replace(/^\/+/, "")}`;
 }
 
 /** Public chat endpoint of a chat trigger node. */
