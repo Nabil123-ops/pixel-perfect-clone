@@ -84,3 +84,29 @@ export function curlFor(
     body ? `  -d '${body.replace(/\n\s*/g, "")}'` : `  -d '{}'`,
   ].join("\n");
 }
+
+/* ------------------------------------------------------------------ */
+/* Embedding — drop any node, form or workflow into another website    */
+/* ------------------------------------------------------------------ */
+
+/** Ready-to-paste <iframe> that renders a live, working panel on any site. */
+export function embedIframeSnippet(url: string, height = 520): string {
+  return `<iframe src="${url}" width="100%" height="${height}" style="border:1px solid #e5e7eb;border-radius:12px" loading="lazy" title="n9n"></iframe>`;
+}
+
+/** Ready-to-paste <script> that calls the endpoint from any website. */
+export function embedScriptSnippet(url: string): string {
+  return [
+    `<script>`,
+    `  // Runs this n9n endpoint from your own site and returns the real execution result.`,
+    `  async function n9nRun(payload) {`,
+    `    const res = await fetch(${JSON.stringify(url)}, {`,
+    `      method: "POST",`,
+    `      headers: { "content-type": "application/json" },`,
+    `      body: JSON.stringify(payload || {}),`,
+    `    });`,
+    `    return res.json();`,
+    `  }`,
+    `<\/script>`,
+  ].join("\n");
+}
