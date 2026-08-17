@@ -142,10 +142,14 @@ export function Inspector({
 
           {kind === "puterModel" && !attachedNames.includes("Puter") && (
             <PuterConnectButton
-              existingId={allCredentials.find((c) => c.name === "Puter")?.id}
+              {...(() => {
+                const existingId = allCredentials.find((c) => c.name === "Puter")?.id;
+                return existingId ? { existingId } : {};
+              })()}
               onConnected={addCredential}
             />
           )}
+
 
           {attachedNames.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
