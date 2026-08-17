@@ -74,6 +74,8 @@ export interface RunOptions {
   startNodeId?: string;
   /** Run exactly one node (used by "Test this node") — no fan-out to successors. */
   onlyNodeId?: string;
+  /** Override this node's saved params for this run only (used by hosted test pages) — never persisted. */
+  paramOverrides?: Json;
   depth?: number;
   persist?: boolean;
   sessionId?: string;
@@ -267,7 +269,10 @@ export async function runWorkflow(options: RunOptions): Promise<RunResult> {
     const nodeCreds = resolveCredentials(credentialNamesFor(node.data));
     return {
       items: input,
-      params: node.data.params ?? {},
+      params:
+        options.onlyNodeId && node.id === options.onlyNodeId && options.paramOverrides
+          ? { ...(node.data.params ?? {}), ...(options.paramOverrides as Record<string, Json>) }
+          : node.data.params ?? {},
       credential: nodeCreds.merged,
       credentials: nodeCreds.byName,
       creds: byName,
