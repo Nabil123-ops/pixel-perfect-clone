@@ -37,6 +37,7 @@ export function Inspector({
   const spec = specOf(node.data.kind);
   const kind = node.data.kind;
   const isWebhook = kind === "webhookTrigger";
+  const isForm = kind === "formTrigger";
   const path = String(node.data.params?.["path"] ?? "").replace(/^\/+/, "");
 
   const setParam = (key: string, value: unknown) =>
@@ -108,6 +109,7 @@ export function Inspector({
           nodeKind={kind}
           title="This node's URLs"
           {...(isWebhook ? { webhookPath: path } : {})}
+          {...(isForm ? { formPath: path } : {})}
         />
 
         <div className="space-y-1.5">
