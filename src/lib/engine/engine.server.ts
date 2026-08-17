@@ -161,7 +161,14 @@ export async function runWorkflow(options: RunOptions): Promise<RunResult> {
     incoming.set(edge.target, [...(incoming.get(edge.target) ?? []), edge]);
   }
 
-  const problems = validateGraph(nodes, edges);
+  // Testing a single node ("Test this node" / the hosted per-node test page)
+  // should only fail on problems with *that* node — an unrelated node
+  // elsewhere on the same canvas missing a credential or connection has no
+  // bearing on this run and shouldn't block it.
+  const nodesToValidate = options.onlyNodeId
+    ? nodes.filter((n) => n.id === options.onlyNodeId)
+    : nodes;
+  const problems = validateGraph(nodesToValidate, edges);
   if (problems.length) {
     const message = problems.join("; ");
     if (persist && executionId) {
