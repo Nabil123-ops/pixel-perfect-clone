@@ -12,6 +12,8 @@ import {
   curlFor,
   execUrl,
   executionLink,
+  formUrl,
+  nodeTestUrl,
   webhookUrl,
   type Env,
 } from "@/lib/flow/endpoints";
@@ -88,6 +90,7 @@ export function EndpointPanel({
   nodeId,
   nodeKind,
   webhookPath,
+  formPath,
   title = "Execution endpoints",
   customDomain = null,
 }: {
@@ -95,6 +98,7 @@ export function EndpointPanel({
   nodeId?: string;
   nodeKind?: string;
   webhookPath?: string;
+  formPath?: string;
   title?: string;
   customDomain?: string | null;
 }) {
@@ -115,9 +119,10 @@ export function EndpointPanel({
       exec: execUrl(env, workflowId, key, nodeId, customDomain),
       webhook: webhookPath !== undefined ? webhookUrl(env, workflowId, webhookPath, customDomain) : null,
       chat: nodeKind === "chatTrigger" ? chatUrl(env, workflowId, customDomain) : null,
+      form: formPath !== undefined ? formUrl(env, workflowId, formPath, customDomain) : null,
     });
     return { test: build("test"), production: build("production") };
-  }, [workflowId, key, nodeId, webhookPath, nodeKind, customDomain]);
+  }, [workflowId, key, nodeId, webhookPath, formPath, nodeKind, customDomain]);
 
   const callNow = async (env: Env) => {
     setBusy(true);
@@ -176,6 +181,17 @@ export function EndpointPanel({
         hint="The live endpoint on the production domain. Use it from other systems, cron jobs or your own backend."
       />
 
+      {nodeId && (
+        <a
+          href={nodeTestUrl("test", workflowId, nodeId, key, customDomain)}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/40 bg-primary/5 p-2 text-xs font-semibold text-primary hover:bg-primary/10"
+        >
+          <ExternalLink className="size-3.5" /> Open real test page for this node
+        </a>
+      )}
+
       {urls.test.webhook && urls.production.webhook && (
         <>
           <UrlRow
@@ -190,6 +206,31 @@ export function EndpointPanel({
             url={urls.production.webhook}
             hint="Public webhook on the live domain. Only fires while the workflow is Active."
           />
+        </>
+      )}
+
+      {urls.test.form && urls.production.form && (
+        <>
+          <UrlRow
+            label="Test form"
+            method="GET"
+            url={urls.test.form}
+            hint="A real, fillable HTML form hosted on this environment — open it and submit real data to test end to end."
+          />
+          <UrlRow
+            label="Production form"
+            method="GET"
+            url={urls.production.form}
+            hint="The live form on the production domain. Share this link with real users. Only accepts submissions while the workflow is Active."
+          />
+          <a
+            href={urls.test.form}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/40 bg-primary/5 p-2 text-xs font-semibold text-primary hover:bg-primary/10"
+          >
+            <ExternalLink className="size-3.5" /> Open test form in a new tab
+          </a>
         </>
       )}
 
