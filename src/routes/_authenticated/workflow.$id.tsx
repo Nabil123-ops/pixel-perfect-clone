@@ -27,7 +27,9 @@ import {
   Play,
   Plus,
   Save,
+  Redo2,
   Search,
+  Undo2,
   User,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -48,6 +50,7 @@ import { WebhookConsole } from "@/components/flow/WebhookConsole";
 import { ApiConsole } from "@/components/flow/ApiConsole";
 import { DomainPanel } from "@/components/flow/DomainPanel";
 import { AIBuilderPanel } from "@/components/flow/AIBuilderPanel";
+import { WorkflowCredentials } from "@/components/flow/WorkflowCredentials";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,9 +150,18 @@ function EditorPage() {
   const [showEndpoints, setShowEndpoints] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [dockOpen, setDockOpen] = useState(true);
-  const [dockTab, setDockTab] = useState<"run" | "urls" | "request" | "api" | "versions" | "ai">(
-    "run",
-  );
+  const [dockTab, setDockTab] = useState<
+    "run" | "urls" | "request" | "api" | "versions" | "ai" | "creds"
+  >("run");
+
+  /* ---------------- Undo / redo (Ctrl+Z / Ctrl+Shift+Z) ---------------- */
+  type Snap = { nodes: Node[]; edges: Edge[] };
+  const past = useRef<Snap[]>([]);
+  const future = useRef<Snap[]>([]);
+  const skipHistory = useRef(false);
+  const lastSnap = useRef<Snap | null>(null);
+  const lastKey = useRef("");
+  const [historyTick, setHistoryTick] = useState(0);
   const runningRef = useRef(false);
   const edgeCallbacksRef = useRef<AddNodeEdgeData>({
     onInsert: () => {},
@@ -238,6 +250,77 @@ function EditorPage() {
     },
     [id, name, active, nodes, edges, save, qc],
   );
+
+  const snapshotKey = useCallback(
+    (ns: Node[], es: Edge[]) =>
+      JSON.stringify([
+        ns.map((n) => [n.id, n.position.x, n.position.y, n.data]),
+        es.map((e) => [e.id, e.source, e.target, e.sourceHandle, e.targetHandle]),
+      ]),
+    [],
+  );
+
+  useEffect(() => {
+    const key = snapshotKey(nodes, edges);
+    if (key === lastKey.current) return;
+    const timer = setTimeout(() => {
+      if (skipHistory.current) {
+        skipHistory.current = false;
+      } else if (lastSnap.current) {
+        past.current = [...past.current.slice(-49), lastSnap.current];
+        future.current = [];
+      }
+      lastSnap.current = { nodes, edges };
+      lastKey.current = key;
+      setHistoryTick((t) => t + 1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [nodes, edges, snapshotKey]);
+
+  const undo = useCallback(() => {
+    const prev = past.current.pop();
+    if (!prev) return;
+    if (lastSnap.current) future.current = [...future.current, lastSnap.current];
+    skipHistory.current = true;
+    lastSnap.current = prev;
+    lastKey.current = snapshotKey(prev.nodes, prev.edges);
+    setNodes(prev.nodes);
+    setEdges(prev.edges);
+    setDirty(true);
+    setHistoryTick((t) => t + 1);
+  }, [setNodes, setEdges, snapshotKey]);
+
+  const redo = useCallback(() => {
+    const next = future.current.pop();
+    if (!next) return;
+    if (lastSnap.current) past.current = [...past.current, lastSnap.current];
+    skipHistory.current = true;
+    lastSnap.current = next;
+    lastKey.current = snapshotKey(next.nodes, next.edges);
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    setDirty(true);
+    setHistoryTick((t) => t + 1);
+  }, [setNodes, setEdges, snapshotKey]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((k === "z" && e.shiftKey) || k === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
 
   /**
    * Only let a connection through when the two handles agree on connection
@@ -639,6 +722,30 @@ function EditorPage() {
               {active ? "Active" : "Inactive"}
             </button>
           </Hint>
+          <Hint text="Undo the last canvas change (Ctrl+Z).">
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              aria-label="Undo"
+              disabled={past.current.length === 0}
+              onClick={undo}
+            >
+              <Undo2 className="size-4" />
+            </Button>
+          </Hint>
+          <Hint text="Redo the change you just undid (Ctrl+Shift+Z).">
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              aria-label="Redo"
+              disabled={future.current.length === 0}
+              onClick={redo}
+            >
+              <Redo2 className="size-4" />
+            </Button>
+          </Hint>
           <Hint text="Every save creates a snapshot. Open this to compare and restore an earlier version of the graph.">
             <Button variant="outline" size="sm" onClick={() => setShowHistory((s) => !s)}>
               <History className="mr-1.5 size-4" /> History
@@ -766,6 +873,7 @@ function EditorPage() {
                   ["urls", "URLs"],
                   ...(webhookNodes.length > 0 ? ([["request", "Request"]] as const) : []),
                   ["api", "API console"],
+                  ["creds", "Credentials"],
                   ["versions", "Versions"],
                   ["ai", "Build with AI"],
                 ] as const
@@ -855,6 +963,12 @@ function EditorPage() {
                     />
                   </div>
                 )}
+                {dockTab === "creds" && (
+                  <WorkflowCredentials
+                    nodes={nodes.map(toStored)}
+                    onSelectNode={(nodeId) => setSelectedId(nodeId)}
+                  />
+                )}
                 {dockTab === "versions" && (
                   <div className="h-full overflow-y-auto">
                     {versionList.map((v) => (
@@ -921,6 +1035,7 @@ function EditorPage() {
             onChange={patchSelected}
             onDelete={deleteSelected}
             onClose={() => setSelectedId(null)}
+            customDomain={customDomain}
             testing={testingNode}
             onTestNode={async () => {
               setTestingNode(true);
