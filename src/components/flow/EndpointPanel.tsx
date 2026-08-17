@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, ExternalLink, Link2, Play, Terminal } from "lucide-react";
+import { Check, Code2, Copy, ExternalLink, Link2, Play, Terminal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,8 @@ import { Hint } from "@/components/flow/Hint";
 import { getExecKey } from "@/lib/api/endpoints.functions";
 import {
   chatUrl,
+  embedIframeSnippet,
+  embedScriptSnippet,
   curlFor,
   execUrl,
   executionLink,

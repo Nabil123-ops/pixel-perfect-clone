@@ -153,7 +153,7 @@ export async function connectPuter(): Promise<{ token: string; username?: string
   if (!res.success || !token) {
     throw new Error(res.msg || res.error || "Puter sign-in did not return a token");
   }
-  return { token, username: res.username };
+  return res.username ? { token, username: res.username } : { token };
 }
 
 /** Extracts the first JSON object/array from a model reply (handles ``` fences). */
