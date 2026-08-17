@@ -23,6 +23,8 @@ interface Props {
   onClose: () => void;
   onTestNode: () => void;
   testing?: boolean;
+  /** Verified custom domain — every URL shown for this node uses it. */
+  customDomain?: string | null;
 }
 
 export function Inspector({
@@ -33,6 +35,7 @@ export function Inspector({
   onClose,
   onTestNode,
   testing,
+  customDomain = null,
 }: Props) {
   const spec = specOf(node.data.kind);
   const kind = node.data.kind;
@@ -108,6 +111,7 @@ export function Inspector({
           nodeId={node.id}
           nodeKind={kind}
           title="This node's URLs"
+          customDomain={customDomain}
           {...(isWebhook ? { webhookPath: path } : {})}
           {...(isForm ? { formPath: path } : {})}
         />
@@ -142,10 +146,14 @@ export function Inspector({
 
           {kind === "puterModel" && !attachedNames.includes("Puter") && (
             <PuterConnectButton
-              existingId={allCredentials.find((c) => c.name === "Puter")?.id}
+              {...(() => {
+                const existingId = allCredentials.find((c) => c.name === "Puter")?.id;
+                return existingId ? { existingId } : {};
+              })()}
               onConnected={addCredential}
             />
           )}
+
 
           {attachedNames.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

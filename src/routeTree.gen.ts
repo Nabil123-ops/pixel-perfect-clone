@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthenticatedBuilderRouteImport } from './routes/_authenticated/builder'
 import { Route as AuthenticatedCredentialsRouteImport } from './routes/_authenticated/credentials'
 import { Route as AuthenticatedExecutionsRouteImport } from './routes/_authenticated/executions'
 import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
@@ -22,7 +23,9 @@ import { Route as AuthenticatedWorkflowIdRouteImport } from './routes/_authentic
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicChatSplatRouteImport } from './routes/api/public/chat/$'
 import { Route as ApiPublicExecSplatRouteImport } from './routes/api/public/exec/$'
+import { Route as ApiPublicFormsSplatRouteImport } from './routes/api/public/forms/$'
 import { Route as ApiPublicHooksTickRouteImport } from './routes/api/public/hooks/tick'
+import { Route as ApiPublicNodeSplatRouteImport } from './routes/api/public/node/$'
 import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
 import { Route as ApiPublicWebhookSplatRouteImport } from './routes/api/public/webhook.$'
 
@@ -49,6 +52,11 @@ const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedBuilderRoute = AuthenticatedBuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCredentialsRoute =
   AuthenticatedCredentialsRouteImport.update({
@@ -91,9 +99,19 @@ const ApiPublicExecSplatRoute = ApiPublicExecSplatRouteImport.update({
   path: '/api/public/exec/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFormsSplatRoute = ApiPublicFormsSplatRouteImport.update({
+  id: '/api/public/forms/$',
+  path: '/api/public/forms/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksTickRoute = ApiPublicHooksTickRouteImport.update({
   id: '/api/public/hooks/tick',
   path: '/api/public/hooks/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicNodeSplatRoute = ApiPublicNodeSplatRouteImport.update({
+  id: '/api/public/node/$',
+  path: '/api/public/node/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicOauthCallbackRoute = ApiPublicOauthCallbackRouteImport.update({
@@ -112,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/builder': typeof AuthenticatedBuilderRoute
   '/credentials': typeof AuthenticatedCredentialsRoute
   '/executions': typeof AuthenticatedExecutionsRoute
   '/templates': typeof AuthenticatedTemplatesRoute
@@ -120,7 +139,9 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/chat/$': typeof ApiPublicChatSplatRoute
   '/api/public/exec/$': typeof ApiPublicExecSplatRoute
+  '/api/public/forms/$': typeof ApiPublicFormsSplatRoute
   '/api/public/hooks/tick': typeof ApiPublicHooksTickRoute
+  '/api/public/node/$': typeof ApiPublicNodeSplatRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/webhook/$': typeof ApiPublicWebhookSplatRoute
 }
@@ -129,6 +150,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/builder': typeof AuthenticatedBuilderRoute
   '/credentials': typeof AuthenticatedCredentialsRoute
   '/executions': typeof AuthenticatedExecutionsRoute
   '/templates': typeof AuthenticatedTemplatesRoute
@@ -137,7 +159,9 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/chat/$': typeof ApiPublicChatSplatRoute
   '/api/public/exec/$': typeof ApiPublicExecSplatRoute
+  '/api/public/forms/$': typeof ApiPublicFormsSplatRoute
   '/api/public/hooks/tick': typeof ApiPublicHooksTickRoute
+  '/api/public/node/$': typeof ApiPublicNodeSplatRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/webhook/$': typeof ApiPublicWebhookSplatRoute
 }
@@ -148,6 +172,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/builder': typeof AuthenticatedBuilderRoute
   '/_authenticated/credentials': typeof AuthenticatedCredentialsRoute
   '/_authenticated/executions': typeof AuthenticatedExecutionsRoute
   '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
@@ -156,7 +181,9 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/chat/$': typeof ApiPublicChatSplatRoute
   '/api/public/exec/$': typeof ApiPublicExecSplatRoute
+  '/api/public/forms/$': typeof ApiPublicFormsSplatRoute
   '/api/public/hooks/tick': typeof ApiPublicHooksTickRoute
+  '/api/public/node/$': typeof ApiPublicNodeSplatRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
   '/api/public/webhook/$': typeof ApiPublicWebhookSplatRoute
 }
@@ -167,6 +194,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/privacy'
     | '/terms'
+    | '/builder'
     | '/credentials'
     | '/executions'
     | '/templates'
@@ -175,7 +203,9 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/chat/$'
     | '/api/public/exec/$'
+    | '/api/public/forms/$'
     | '/api/public/hooks/tick'
+    | '/api/public/node/$'
     | '/api/public/oauth/callback'
     | '/api/public/webhook/$'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +214,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/privacy'
     | '/terms'
+    | '/builder'
     | '/credentials'
     | '/executions'
     | '/templates'
@@ -192,7 +223,9 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/chat/$'
     | '/api/public/exec/$'
+    | '/api/public/forms/$'
     | '/api/public/hooks/tick'
+    | '/api/public/node/$'
     | '/api/public/oauth/callback'
     | '/api/public/webhook/$'
   id:
@@ -202,6 +235,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/privacy'
     | '/terms'
+    | '/_authenticated/builder'
     | '/_authenticated/credentials'
     | '/_authenticated/executions'
     | '/_authenticated/templates'
@@ -210,7 +244,9 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/chat/$'
     | '/api/public/exec/$'
+    | '/api/public/forms/$'
     | '/api/public/hooks/tick'
+    | '/api/public/node/$'
     | '/api/public/oauth/callback'
     | '/api/public/webhook/$'
   fileRoutesById: FileRoutesById
@@ -224,7 +260,9 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicChatSplatRoute: typeof ApiPublicChatSplatRoute
   ApiPublicExecSplatRoute: typeof ApiPublicExecSplatRoute
+  ApiPublicFormsSplatRoute: typeof ApiPublicFormsSplatRoute
   ApiPublicHooksTickRoute: typeof ApiPublicHooksTickRoute
+  ApiPublicNodeSplatRoute: typeof ApiPublicNodeSplatRoute
   ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
   ApiPublicWebhookSplatRoute: typeof ApiPublicWebhookSplatRoute
 }
@@ -265,6 +303,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/builder': {
+      id: '/_authenticated/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof AuthenticatedBuilderRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/credentials': {
       id: '/_authenticated/credentials'
@@ -322,11 +367,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicExecSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/forms/$': {
+      id: '/api/public/forms/$'
+      path: '/api/public/forms/$'
+      fullPath: '/api/public/forms/$'
+      preLoaderRoute: typeof ApiPublicFormsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/tick': {
       id: '/api/public/hooks/tick'
       path: '/api/public/hooks/tick'
       fullPath: '/api/public/hooks/tick'
       preLoaderRoute: typeof ApiPublicHooksTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/node/$': {
+      id: '/api/public/node/$'
+      path: '/api/public/node/$'
+      fullPath: '/api/public/node/$'
+      preLoaderRoute: typeof ApiPublicNodeSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/oauth/callback': {
@@ -347,6 +406,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBuilderRoute: typeof AuthenticatedBuilderRoute
   AuthenticatedCredentialsRoute: typeof AuthenticatedCredentialsRoute
   AuthenticatedExecutionsRoute: typeof AuthenticatedExecutionsRoute
   AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
@@ -355,6 +415,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBuilderRoute: AuthenticatedBuilderRoute,
   AuthenticatedCredentialsRoute: AuthenticatedCredentialsRoute,
   AuthenticatedExecutionsRoute: AuthenticatedExecutionsRoute,
   AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
@@ -374,7 +435,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicChatSplatRoute: ApiPublicChatSplatRoute,
   ApiPublicExecSplatRoute: ApiPublicExecSplatRoute,
+  ApiPublicFormsSplatRoute: ApiPublicFormsSplatRoute,
   ApiPublicHooksTickRoute: ApiPublicHooksTickRoute,
+  ApiPublicNodeSplatRoute: ApiPublicNodeSplatRoute,
   ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
   ApiPublicWebhookSplatRoute: ApiPublicWebhookSplatRoute,
 }

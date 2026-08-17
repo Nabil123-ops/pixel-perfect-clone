@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, ExternalLink, Link2, Play, Terminal } from "lucide-react";
+import { Check, Code2, Copy, ExternalLink, Link2, Play, Terminal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,8 @@ import { Hint } from "@/components/flow/Hint";
 import { getExecKey } from "@/lib/api/endpoints.functions";
 import {
   chatUrl,
+  embedIframeSnippet,
+  embedScriptSnippet,
   curlFor,
   execUrl,
   executionLink,
@@ -191,6 +193,46 @@ export function EndpointPanel({
           <ExternalLink className="size-3.5" /> Open real test page for this node
         </a>
       )}
+
+      {/* Embed anywhere — real, working snippets pointing at the production
+          origin (the verified custom domain when one is connected). */}
+      <div className="space-y-2 rounded-md border border-dashed border-border p-2">
+        <Hint
+          title="Embed on another website"
+          text="Paste these into any site. The iframe renders a real, runnable panel; the script calls this endpoint and returns the real execution result."
+          side="left"
+        >
+          <p className="flex cursor-help items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <Code2 className="size-3" /> Embed on another website
+          </p>
+        </Hint>
+        {(() => {
+          const uiUrl = nodeId
+            ? nodeTestUrl("production", workflowId, nodeId, key, customDomain)
+            : (urls.production.form ?? urls.production.exec);
+          const snippet = embedIframeSnippet(uiUrl);
+          const script = embedScriptSnippet(urls.production.exec);
+          return (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground">iframe widget</span>
+                <CopyIcon value={snippet} label="Embed iframe" />
+              </div>
+              <pre className="max-h-[70px] overflow-auto rounded bg-secondary/60 p-2 font-mono text-[10px] leading-relaxed">
+                {snippet}
+              </pre>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground">JavaScript call</span>
+                <CopyIcon value={script} label="Embed script" />
+              </div>
+              <pre className="max-h-[110px] overflow-auto rounded bg-secondary/60 p-2 font-mono text-[10px] leading-relaxed">
+                {script}
+              </pre>
+            </>
+          );
+        })()}
+      </div>
+
 
       {urls.test.webhook && urls.production.webhook && (
         <>

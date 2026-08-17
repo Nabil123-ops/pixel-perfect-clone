@@ -153,7 +153,7 @@ export async function connectPuter(): Promise<{ token: string; username?: string
   if (!res.success || !token) {
     throw new Error(res.msg || res.error || "Puter sign-in did not return a token");
   }
-  return { token, username: res.username };
+  return res.username ? { token, username: res.username } : { token };
 }
 
 /** Extracts the first JSON object/array from a model reply (handles ``` fences). */
@@ -183,4 +183,42 @@ export function extractJson<T = unknown>(reply: string): T {
     }
   }
   throw new Error("The model returned malformed JSON");
+}
+
+/* ------------------------------------------------------------------ */
+/* Images — real generation and real uploads, 100% in the browser      */
+/* ------------------------------------------------------------------ */
+
+interface PuterImageApi {
+  ai: {
+    txt2img?: (
+      prompt: string,
+      testMode?: boolean | { model?: string },
+      options?: { model?: string },
+    ) => Promise<HTMLImageElement | string>;
+  };
+}
+
+/**
+ * Generates a real image from a prompt through Puter (no API key, works on
+ * Cloudflare Pages) and returns a data URL that can be embedded anywhere.
+ */
+export async function puterImage(prompt: string, model?: string): Promise<string> {
+  const puter = (await loadPuter()) as unknown as PuterImageApi;
+  if (!puter.ai?.txt2img) throw new Error("Image generation is unavailable in this browser session");
+  const res = await puter.ai.txt2img(prompt, model ? { model } : undefined);
+  const src = typeof res === "string" ? res : res?.src;
+  if (!src) throw new Error("The model returned no image");
+  if (src.startsWith("data:") || src.startsWith("http")) return src;
+  return src;
+}
+
+/** Reads an uploaded file into a data URL so it embeds in generated sites. */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
 }
