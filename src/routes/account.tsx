@@ -45,17 +45,20 @@ function AccountPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center text-center">
-          <img src="/logo.png" alt="n9n logo" className="size-16 object-contain" width={64} height={64} />
+    <main className="app-bg flex min-h-screen items-center justify-center px-4">
+      <div className="glass-strong relative w-full max-w-sm overflow-hidden rounded-3xl p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 size-40 rounded-full bg-gradient-to-br from-primary/25 to-accent/20 blur-3xl" />
+        <div className="relative flex flex-col items-center text-center">
+          <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-[var(--glow-primary)]">
+            <img src="/logo.png" alt="n9n logo" className="size-8 object-contain brightness-0 invert" width={32} height={32} />
+          </span>
           <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">Create your account</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             No password, no email. Just a name — it becomes your workspace address.
           </p>
         </div>
 
-        <form onSubmit={submit} className="mt-7 space-y-3">
+        <form onSubmit={submit} className="relative mt-7 space-y-3">
           <Input
             autoFocus
             value={name}
@@ -65,6 +68,7 @@ function AccountPage() {
             }}
             placeholder="Nabil"
             aria-label="Your name"
+            className="h-11 rounded-xl text-center"
           />
           <p className="text-xs text-muted-foreground">
             Your address:{" "}
@@ -76,7 +80,7 @@ function AccountPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="relative mt-4 text-center text-xs text-muted-foreground">
           Returning? Type the same name to open the same workspace.
         </p>
       </div>
