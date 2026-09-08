@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   Code2,
   Download,
   Eye,
   ExternalLink,
+  LogOut,
   Loader2,
   Send,
   Sparkles,
@@ -21,7 +22,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   DEFAULT_PUTER_MODEL,
   PUTER_MODELS,
+  connectPuter,
   extractJson,
+  loadPuter,
   puterChat,
   type PuterMessage,
 } from "@/lib/puter";
@@ -61,7 +64,53 @@ function BuilderPage() {
   const [projectName, setProjectName] = useState("My site");
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [view, setView] = useState<"preview" | "code">("preview");
+  const [puterUser, setPuterUser] = useState<string | null>(null);
+  const [puterMenuOpen, setPuterMenuOpen] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
+
+  // Restore an existing Puter session (if any) on load — no popup needed.
+  useEffect(() => {
+    let cancelled = false;
+    void loadPuter()
+      .then(async (puter) => {
+        if (cancelled) return;
+        if (puter.auth.isSignedIn()) {
+          const u = await puter.auth.getUser();
+          if (!cancelled) setPuterUser(u.username);
+        }
+      })
+      .catch(() => {
+        /* Puter not reachable yet — the sign-in button will retry on click */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const signInWithPuter = async () => {
+    setSigningIn(true);
+    try {
+      const { username } = await connectPuter();
+      setPuterUser(username ?? "Puter user");
+      toast.success(username ? `Signed in as ${username}` : "Signed in with Puter");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Puter sign-in failed");
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  const signOutOfPuter = async () => {
+    try {
+      const puter = await loadPuter();
+      puter.auth.signOut();
+    } finally {
+      setPuterUser(null);
+      setPuterMenuOpen(false);
+      toast.success("Signed out of Puter");
+    }
+  };
 
   const previewDoc = useMemo(() => buildPreviewDoc(framework, files), [framework, files]);
   const activeFileContent = files.find((f) => f.path === activeFile)?.content ?? "";
@@ -153,6 +202,55 @@ function BuilderPage() {
             </option>
           ))}
         </select>
+
+        <div className="relative">
+          {puterMenuOpen && (
+            <button
+              aria-label="Close menu"
+              onClick={() => setPuterMenuOpen(false)}
+              className="fixed inset-0 z-10 cursor-default"
+            />
+          )}
+          {puterUser ? (
+            <button
+              onClick={() => setPuterMenuOpen((v) => !v)}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/8 px-2.5 text-xs font-medium text-primary"
+            >
+              <span className="grid size-4 shrink-0 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                {puterUser.slice(0, 1).toUpperCase()}
+              </span>
+              {puterUser}
+            </button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={() => void signInWithPuter()}
+              disabled={signingIn}
+            >
+              {signingIn ? (
+                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+              ) : (
+                <User className="mr-1.5 size-3.5" />
+              )}
+              Sign in with Puter
+            </Button>
+          )}
+          {puterMenuOpen && puterUser && (
+            <div className="glass-strong absolute right-0 top-9 z-20 w-48 rounded-xl p-1.5">
+              <p className="px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                Signed in as <span className="font-medium text-foreground">{puterUser}</span>
+              </p>
+              <button
+                onClick={() => void signOutOfPuter()}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="size-3.5" /> Sign out of Puter
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => resetProject()}>
