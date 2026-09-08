@@ -40,7 +40,11 @@ function fallbackDoc(message: string): string {
 /** Removes ES module syntax so plain concatenated scripts share one scope. */
 function stripModuleSyntax(src: string): string {
   return src
-    .replace(/^\s*import[^\n;]*;?\s*$/gm, "")
+    // import statements, including multi-line destructured ones:
+    // import {\n  useState,\n} from "react";
+    .replace(/import\s+[\s\S]*?from\s*["'][^"']*["']\s*;?/g, "")
+    // bare side-effect imports: import "./styles.css";
+    .replace(/^\s*import\s*["'][^"']*["'];?\s*$/gm, "")
     .replace(/^\s*export\s+default\s+/gm, "")
     .replace(/^\s*export\s+(?=const\s|function\s|class\s|let\s|var\s|async\s)/gm, "")
     .replace(/^\s*["']use client["'];?\s*$/gm, "");
@@ -75,6 +79,8 @@ function findEntryComponentName(
 }
 
 function reactShell(entryName: string, css: string, code: string): string {
+  const codeJson = JSON.stringify(code);
+  const entryJson = JSON.stringify(entryName);
   return `<!doctype html>
 <html>
 <head>
@@ -90,20 +96,41 @@ ${escapeClosingTags(css)}
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-presets="react,typescript">
-const { useState, useEffect, useRef, useMemo, useCallback, useContext, useReducer, Fragment } = React;
-
-${escapeClosingTags(code)}
-
-const __mountEl = document.getElementById("root");
-try {
-  ReactDOM.createRoot(__mountEl).render(<${entryName} />);
-} catch (err) {
-  __mountEl.innerHTML =
-    '<pre style="color:#b91c1c;white-space:pre-wrap;padding:16px;font:12px/1.5 monospace;">' +
-    (err && err.message ? err.message : String(err)) +
-    "<\\/pre>";
-}
+<script>
+(function () {
+  var mountEl = document.getElementById("root");
+  function showError(err) {
+    var msg = (err && err.message) ? err.message : String(err);
+    mountEl.innerHTML =
+      '<pre style="color:#b91c1c;white-space:pre-wrap;padding:16px;font:12px/1.5 monospace;">' +
+      'Preview error:\\n\\n' + msg +
+      '<\\/pre>';
+  }
+  window.addEventListener("error", function (e) {
+    if (!mountEl.hasChildNodes()) showError(e.error || e.message);
+  });
+  try {
+    var src = ${codeJson};
+    var entryName = ${entryJson};
+    var transformed = Babel.transform(src, {
+      presets: ["react", ["typescript", { isTSX: true, allExtensions: true }]],
+      filename: "app.tsx",
+    }).code;
+    var factory = new Function(
+      "React", "ReactDOM",
+      "useState", "useEffect", "useRef", "useMemo", "useCallback", "useContext", "useReducer", "Fragment",
+      transformed + "\\n;return typeof " + entryName + " !== 'undefined' ? " + entryName + " : null;"
+    );
+    var Entry = factory(
+      React, ReactDOM,
+      React.useState, React.useEffect, React.useRef, React.useMemo, React.useCallback, React.useContext, React.useReducer, React.Fragment
+    );
+    if (!Entry) throw new Error('Could not find a component named "' + entryName + '" to render.');
+    ReactDOM.createRoot(mountEl).render(React.createElement(Entry));
+  } catch (err) {
+    showError(err);
+  }
+})();
 <\/script>
 </body>
 </html>`;
