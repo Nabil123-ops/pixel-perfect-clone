@@ -136,7 +136,7 @@ function CredentialsPage() {
             <select
               value={draftType}
               onChange={(e) => setDraftType(e.target.value as CredentialType)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 rounded-xl border border-border/70 bg-white/60 px-3 text-sm backdrop-blur-sm"
               aria-label="Credential type"
             >
               {CREDENTIAL_TYPES.map((t) => (
@@ -153,8 +153,8 @@ function CredentialsPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-        <div className="mb-5 rounded-xl border border-border bg-card p-4">
-          <Label htmlFor="node-search" className="text-xs">
+        <div className="glass relative mb-5 rounded-2xl p-4">
+          <Label htmlFor="node-search" className="relative text-xs">
             Search a node to add its API key
           </Label>
           <div className="relative mt-1.5">
@@ -164,12 +164,12 @@ function CredentialsPage() {
               value={nodeQuery}
               onChange={(e) => setNodeQuery(e.target.value)}
               placeholder="Slack, OpenAI, Claude, DeepSeek, Kimi, Notion…"
-              className="h-9 pl-9"
+              className="h-9 rounded-xl bg-white/70 pl-9"
               autoComplete="off"
             />
           </div>
           {nodeMatches.length > 0 && (
-            <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
+            <ul className="relative mt-2 divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-white/60">
               {nodeMatches.map((n) => {
                 const guide = authGuideFor(n.kind);
                 return (
@@ -177,16 +177,16 @@ function CredentialsPage() {
                     <button
                       type="button"
                       onClick={() => addForNode(n)}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-secondary"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-white/80"
                     >
                       <NodeIcon icon={n.icon} className="size-4" />
                       <span className="min-w-0 flex-1 truncate">{n.name}</span>
-                      <span className="shrink-0 rounded-md bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
+                      <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
                         {credentialTypeSpec(n.credentialType as CredentialType).name}
                       </span>
                     </button>
                     {guide && (
-                      <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1 border-t border-border bg-secondary/40 px-3 py-2 text-[11px] text-muted-foreground">
+                      <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1 border-t border-border/60 bg-secondary/40 px-3 py-2 text-[11px] text-muted-foreground">
                         <dt>Header name</dt>
                         <dd className="font-mono text-foreground">{guide.headerName}</dd>
                         <dt>Value format</dt>
@@ -216,27 +216,29 @@ function CredentialsPage() {
 
         </div>
 
-        <section className="mb-5 rounded-xl border border-border bg-card p-4">
-          <h2 className="font-display text-sm font-semibold">How to add a header</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <section className="glass relative mb-5 rounded-2xl p-4">
+          <h2 className="relative font-display text-sm font-semibold">How to add a header</h2>
+          <p className="relative mt-1 text-xs text-muted-foreground">
             Pick the credential type, paste the key, and set <span className="font-mono">Header name</span>{" "}
             to one of the schemes below. Only <span className="font-mono">Authorization</span> gets an
             automatic <span className="font-mono">Bearer</span> prefix — every other header is sent exactly
             as typed. Need several headers at once? Use the "Custom header(s)" credential type below, or
             the "Extra headers (JSON)" field on any credential.
           </p>
-          <ul className="mt-3 grid gap-2 md:grid-cols-2">
+          <ul className="relative mt-3 grid gap-2.5 md:grid-cols-2">
             {HEADER_PRESETS.map((p) => (
               <li
                 key={p.id}
-                className={`rounded-lg border p-3 text-[11px] ${
-                  p.recommended ? "border-primary/50 bg-primary/5" : "border-border"
+                className={`rounded-xl border p-3 text-[11px] backdrop-blur-sm transition-colors ${
+                  p.recommended
+                    ? "border-primary/40 bg-primary/8"
+                    : "border-border/60 bg-white/50"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <code className="font-mono text-xs text-foreground">{p.headerName}</code>
                   {p.recommended && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    <span className="rounded-full bg-gradient-to-r from-primary to-accent px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                       Recommended
                     </span>
                   )}
@@ -249,7 +251,7 @@ function CredentialsPage() {
           </ul>
         </section>
 
-        <p className="mb-5 rounded-lg border border-border bg-secondary/50 p-3 text-sm text-muted-foreground">
+        <p className="glass mb-5 rounded-xl p-3 text-sm text-muted-foreground">
           Attach a credential to a node in the inspector, or reference a value directly with{" "}
           <code className="font-mono text-foreground">{"{{ $cred.Name.key }}"}</code>.
         </p>
@@ -290,12 +292,12 @@ function CredentialsPage() {
         </div>
 
         {!isLoading && creds.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border p-12 text-center">
-            <p className="font-display font-semibold">No credentials stored</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className="glass rounded-2xl border-dashed p-12 text-center">
+            <p className="relative font-display font-semibold">No credentials stored</p>
+            <p className="relative mt-1 text-sm text-muted-foreground">
               Add a Slack, Discord, Telegram or any API credential to get started.
             </p>
-            <Button size="sm" className="mt-4" onClick={addNew}>
+            <Button size="sm" className="relative mt-4" onClick={addNew}>
               <Plus className="mr-1.5 size-4" /> Add credential
             </Button>
           </div>
@@ -323,15 +325,15 @@ function CredentialCard({
   const [fields, setFields] = useState<Record<string, string>>({});
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-2">
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+    <div className="glass premium-card space-y-3 rounded-2xl p-4">
+      <div className="relative flex items-center gap-2">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-primary">
           <KeyRound className="size-4" />
         </span>
         <Input
           value={name}
           onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9_]/g, ""))}
-          className="h-9 font-display text-sm"
+          className="h-9 rounded-lg bg-white/70 font-display text-sm"
           aria-label="Credential name"
         />
         <Button
@@ -344,9 +346,9 @@ function CredentialCard({
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">{spec.description}</p>
+      <p className="relative text-xs text-muted-foreground">{spec.description}</p>
 
-      <div className="space-y-2">
+      <div className="relative space-y-2">
         {spec.fields.map((f) => (
           <div key={f.key} className="space-y-1">
             <Label htmlFor={`${credential.id}-${f.key}`} className="text-xs">
@@ -354,7 +356,7 @@ function CredentialCard({
             </Label>
             <Input
               id={`${credential.id}-${f.key}`}
-              className="h-8 font-mono text-xs"
+              className="h-8 rounded-lg bg-white/70 font-mono text-xs"
               type={f.secret ? "password" : "text"}
               autoComplete="off"
               {...(f.key === "headerName" ? { list: "n9n-header-names" } : {})}
@@ -391,8 +393,10 @@ function CredentialCard({
 
       {credential.lastTestMessage && (
         <p
-          className={`flex items-center gap-1.5 text-xs ${
-            credential.lastTestOk ? "text-primary" : "text-destructive"
+          className={`relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs ${
+            credential.lastTestOk
+              ? "bg-primary/8 text-primary"
+              : "bg-destructive/8 text-destructive"
           }`}
         >
           {credential.lastTestOk ? (
@@ -404,7 +408,7 @@ function CredentialCard({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="relative flex flex-wrap gap-2">
         <Button
           size="sm"
           onClick={() => {
@@ -423,7 +427,7 @@ function CredentialCard({
           </Button>
         )}
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="relative text-[11px] text-muted-foreground">
         Blank fields keep the stored value. Existing values show masked previews only.
       </p>
     </div>
