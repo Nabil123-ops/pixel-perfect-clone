@@ -113,7 +113,8 @@ ${escapeClosingTags(css)}
     var src = ${codeJson};
     var entryName = ${entryJson};
     var transformed = Babel.transform(src, {
-      presets: ["react", ["typescript", { isTSX: true, allExtensions: true }]],
+      presets: ["react", "typescript"],
+      plugins: ["syntax-jsx"],
       filename: "app.tsx",
     }).code;
     var factory = new Function(
