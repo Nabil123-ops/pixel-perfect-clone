@@ -76,11 +76,11 @@ export function AskAIPanel() {
       </SheetTrigger>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+        className="glass-strong flex w-full flex-col gap-0 border-l border-border/60 p-0 sm:max-w-md"
       >
-        <SheetHeader className="border-b border-border bg-gradient-to-br from-primary/10 to-accent/10 px-5 py-4">
+        <SheetHeader className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/10 to-accent/10 px-5 py-4">
           <SheetTitle className="flex items-center gap-2 font-display">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[var(--glow-primary)]">
               <Bot className="size-4.5" />
             </span>
             Ask AI
@@ -112,7 +112,7 @@ export function AskAIPanel() {
                   <button
                     key={s}
                     onClick={() => void send(s)}
-                    className="block w-full rounded-lg border border-border bg-card px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                    className="block w-full rounded-xl border border-border/60 bg-white/50 px-3 py-2 text-left text-xs text-muted-foreground backdrop-blur-sm transition-colors hover:border-primary/40 hover:bg-white/90 hover:text-foreground"
                   >
                     {s}
                   </button>
@@ -137,8 +137,8 @@ export function AskAIPanel() {
                 <div
                   className={`min-w-0 max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
                     m.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-card"
+                      ? "bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[var(--glow-primary)]"
+                      : "border border-border/60 bg-white/70"
                   }`}
                 >
                   {m.content}
@@ -156,7 +156,7 @@ export function AskAIPanel() {
           </div>
         </div>
 
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border/60 bg-white/40 p-3">
           <div className="flex items-end gap-2">
             <Textarea
               value={input}
@@ -168,7 +168,7 @@ export function AskAIPanel() {
                 }
               }}
               placeholder="Ask anything about your automations…"
-              className="min-h-10 resize-none text-sm"
+              className="min-h-10 resize-none rounded-xl bg-white/70 text-sm"
               rows={1}
             />
             <Button size="icon" onClick={() => void send()} disabled={pending || !input.trim()}>
