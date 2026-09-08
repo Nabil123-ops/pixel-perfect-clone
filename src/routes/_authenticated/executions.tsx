@@ -79,8 +79,8 @@ function ExecutionsPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-        <div className="overflow-hidden rounded-xl border border-border">
-          <div className="grid grid-cols-[1.4fr_0.8fr_0.7fr_0.7fr_auto] gap-3 border-b border-border bg-secondary/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="glass-panel overflow-hidden rounded-2xl">
+          <div className="grid grid-cols-[1.4fr_0.8fr_0.7fr_0.7fr_auto] gap-3 border-b border-border/60 bg-white/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <span>Workflow</span>
             <span>Status</span>
             <span>Mode</span>
@@ -92,7 +92,7 @@ function ExecutionsPage() {
             <button
               key={r.id}
               onClick={() => setOpenId(r.id)}
-              className="grid w-full grid-cols-[1.4fr_0.8fr_0.7fr_0.7fr_auto] items-center gap-3 border-b border-border px-4 py-3 text-left text-sm last:border-0 hover:bg-secondary/40"
+              className="grid w-full grid-cols-[1.4fr_0.8fr_0.7fr_0.7fr_auto] items-center gap-3 border-b border-border/50 px-4 py-3 text-left text-sm last:border-0 transition-colors hover:bg-white/60"
             >
               <span className="truncate font-medium">{r.workflowName || "Untitled"}</span>
               <span
@@ -148,8 +148,8 @@ function ExecutionDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-foreground/20 backdrop-blur-sm">
       <button className="flex-1" aria-label="Close" onClick={onClose} />
-      <aside className="flex h-full w-full max-w-[720px] flex-col border-l border-border bg-card">
-        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+      <aside className="glass-strong flex h-full w-full max-w-[720px] flex-col border-l border-border/60">
+        <div className="flex items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
           <div className="min-w-0">
             <p className="truncate font-display font-semibold">{run?.workflowName ?? "Execution"}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
