@@ -120,7 +120,7 @@ function WorkflowsPage() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as "updated" | "name")}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-9 rounded-xl border border-border/70 bg-white/60 px-3 text-sm backdrop-blur-sm"
             aria-label="Sort workflows"
           >
             <option value="updated">Sort by last updated</option>
@@ -128,15 +128,17 @@ function WorkflowsPage() {
           </select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {shown.map((w) => (
             <div
               key={w.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-[var(--shadow-panel)]"
+              className="glass premium-card grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl p-4"
             >
-              <Link to="/workflow/$id" params={{ id: w.id }} className="min-w-0">
+              <Link to="/workflow/$id" params={{ id: w.id }} className="relative min-w-0">
                 <p className="flex min-w-0 items-center gap-2 font-display font-semibold">
-                  <WorkflowIcon className="size-4 shrink-0 text-primary" />
+                  <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <WorkflowIcon className="size-3.5" />
+                  </span>
                   <span className="truncate">{w.name}</span>
                 </p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -145,16 +147,16 @@ function WorkflowsPage() {
                   {w.lastRunAt ? ` · last run ${ago(w.lastRunAt)}` : ""}
                 </p>
               </Link>
-              <div className="flex items-center gap-1.5">
+              <div className="relative flex items-center gap-1.5">
                 <button
                   onClick={async () => {
                     await activate({ data: { id: w.id, active: !w.active } });
                     invalidate();
                   }}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     w.active
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border bg-secondary text-muted-foreground"
+                      ? "border-primary/30 bg-primary/10 text-primary"
+                      : "border-border/70 bg-secondary text-muted-foreground"
                   }`}
                 >
                   {w.active ? "Active" : "Inactive"}
@@ -194,12 +196,12 @@ function WorkflowsPage() {
           ))}
 
           {!isLoading && shown.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border p-12 text-center">
-              <p className="font-display font-semibold">No workflows yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+            <div className="glass rounded-2xl border-dashed p-12 text-center">
+              <p className="relative font-display font-semibold">No workflows yet</p>
+              <p className="relative mt-1 text-sm text-muted-foreground">
                 Start from scratch or pick one of the ready-made templates.
               </p>
-              <div className="mt-4 flex justify-center gap-2">
+              <div className="relative mt-4 flex justify-center gap-2">
                 <Button size="sm" onClick={() => void create()}>
                   <Plus className="mr-1.5 size-4" /> Create workflow
                 </Button>
