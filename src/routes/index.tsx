@@ -98,9 +98,12 @@ function Overview() {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-        <div className="mb-6 rounded-xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-4">
-          <p className="flex flex-wrap items-center gap-2 text-sm">
-            <InfinityIcon className="size-4 text-primary" />
+        <div className="glass relative mb-6 overflow-hidden rounded-2xl p-5">
+          <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 blur-3xl" />
+          <p className="relative flex flex-wrap items-center gap-2 text-sm">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground">
+              <InfinityIcon className="size-3.5" />
+            </span>
             <span className="font-display font-semibold">Everything unlimited.</span>
             <span className="text-muted-foreground">
               Runs execute on the server with persistent history — triggers keep firing after you
@@ -109,33 +112,37 @@ function Overview() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 divide-border overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-3 lg:grid-cols-5 lg:divide-x">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {stats.map((s) => (
-            <div key={s.label} className="border-b border-border p-5 lg:border-b-0">
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className="mt-2 font-display text-3xl font-bold tracking-tight">{s.value}</p>
+            <div key={s.label} className="glass premium-card rounded-2xl p-5">
+              <p className="relative text-xs text-muted-foreground">{s.label}</p>
+              <p className="relative mt-2 font-display text-3xl font-bold tracking-tight text-gradient-primary">
+                {s.value}
+              </p>
             </div>
           ))}
         </div>
 
-        <section className="mt-8">
+        <section className="mt-9">
           <div className="mb-3 flex items-end justify-between gap-4">
             <h2 className="font-display text-lg font-semibold">Recent workflows</h2>
-            <Link to="/workflows" className="text-sm text-primary hover:underline">
+            <Link to="/workflows" className="text-sm font-medium text-primary hover:underline">
               View all
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {flows.slice(0, 5).map((w) => (
               <Link
                 key={w.id}
                 to="/workflow/$id"
                 params={{ id: w.id }}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-[var(--shadow-panel)]"
+                className="glass premium-card grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl p-4"
               >
-                <span className="min-w-0">
+                <span className="relative min-w-0">
                   <span className="flex min-w-0 items-center gap-2 font-display font-semibold">
-                    <WorkflowIcon className="size-4 shrink-0 text-primary" />
+                    <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                      <WorkflowIcon className="size-3.5" />
+                    </span>
                     <span className="truncate">{w.name}</span>
                   </span>
                   <span className="mt-1 block truncate text-xs text-muted-foreground">
@@ -143,9 +150,9 @@ function Overview() {
                   </span>
                 </span>
                 <span
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                  className={`relative rounded-full border px-2.5 py-1 text-[11px] font-medium ${
                     w.active
-                      ? "border-primary/40 bg-primary/10 text-primary"
+                      ? "border-primary/30 bg-primary/10 text-primary"
                       : "border-border bg-secondary text-muted-foreground"
                   }`}
                 >
@@ -154,17 +161,17 @@ function Overview() {
               </Link>
             ))}
             {flows.length === 0 && (
-              <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              <p className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">
                 No workflows yet — create one or start from a template below.
               </p>
             )}
           </div>
         </section>
 
-        <section className="mt-8">
+        <section className="mt-9 mb-4">
           <div className="mb-3 flex items-end justify-between gap-4">
             <h2 className="font-display text-lg font-semibold">Start from a template</h2>
-            <Link to="/templates" className="text-sm text-primary hover:underline">
+            <Link to="/templates" className="text-sm font-medium text-primary hover:underline">
               All {TEMPLATES.length} templates
             </Link>
           </div>
@@ -173,14 +180,16 @@ function Overview() {
               <button
                 key={t.slug}
                 onClick={() => void fromTemplate(t.slug)}
-                className="group rounded-xl border border-border bg-card p-4 text-left transition-shadow hover:shadow-[var(--shadow-panel)]"
+                className="glass premium-card group rounded-2xl p-4 text-left"
               >
-                <p className="flex items-center gap-2 font-display font-semibold">
-                  <Sparkles className="size-4 shrink-0 text-primary" />
+                <p className="relative flex items-center gap-2 font-display font-semibold">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary/15 to-accent/15 text-primary">
+                    <Sparkles className="size-3.5" />
+                  </span>
                   <span className="truncate">{t.name}</span>
                 </p>
-                <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{t.description}</p>
-                <span className="mt-3 flex items-center gap-1 text-xs font-medium text-primary">
+                <p className="relative mt-1.5 line-clamp-2 text-sm text-muted-foreground">{t.description}</p>
+                <span className="relative mt-3 flex items-center gap-1 text-xs font-medium text-primary">
                   Use template{" "}
                   <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                 </span>
