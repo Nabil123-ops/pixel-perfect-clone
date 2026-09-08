@@ -59,10 +59,10 @@ function TemplatesPage() {
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
                 cat === c
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  ? "border-transparent bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-[var(--glow-primary)]"
+                  : "border-border/70 bg-white/60 text-muted-foreground backdrop-blur-sm hover:text-foreground"
               }`}
             >
               {c}
@@ -74,9 +74,9 @@ function TemplatesPage() {
           {shown.map((t) => (
             <article
               key={t.slug}
-              className="flex flex-col rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-[var(--shadow-panel)]"
+              className="glass premium-card flex flex-col rounded-2xl p-5"
             >
-              <div className="flex items-center gap-2">
+              <div className="relative flex items-center gap-2">
                 <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary/15 to-accent/15 text-primary">
                   <Sparkles className="size-4" />
                 </span>
@@ -84,21 +84,21 @@ function TemplatesPage() {
                   {t.category}
                 </span>
               </div>
-              <h2 className="mt-3 font-display text-base font-semibold">{t.name}</h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t.description}</p>
+              <h2 className="relative mt-3 font-display text-base font-semibold">{t.name}</h2>
+              <p className="relative mt-1.5 text-sm leading-relaxed text-muted-foreground">{t.description}</p>
 
-              <div className="mt-4 flex flex-wrap gap-1.5">
+              <div className="relative mt-4 flex flex-wrap gap-1.5">
                 {t.steps.map((s, i) => (
                   <span
                     key={i}
-                    className="rounded-md border border-border bg-secondary/60 px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+                    className="rounded-md border border-border/60 bg-white/50 px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
                   >
                     {specOf(s.kind).name}
                   </span>
                 ))}
               </div>
 
-              <Button size="sm" className="mt-5 w-full" onClick={() => void use(t)}>
+              <Button size="sm" className="relative mt-5 w-full" onClick={() => void use(t)}>
                 Use this template <ArrowRight className="ml-1.5 size-4" />
               </Button>
             </article>
