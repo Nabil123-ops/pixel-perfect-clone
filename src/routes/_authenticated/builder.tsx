@@ -131,8 +131,10 @@ function BuilderPage() {
 
   return (
     <Shell>
-      <header className="flex items-center gap-3 border-b border-border px-6 py-3">
-        <Sparkles className="size-4 shrink-0 text-primary" />
+      <header className="glass-panel relative z-0 flex items-center gap-3 rounded-none border-x-0 border-t-0 px-6 py-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-[var(--glow-primary)]">
+          <Sparkles className="size-4" />
+        </span>
         <Input
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
@@ -142,7 +144,7 @@ function BuilderPage() {
         <select
           value={framework}
           onChange={(e) => resetProject(e.target.value as BuilderFramework)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+          className="h-8 rounded-lg border border-border/70 bg-white/60 px-2 text-xs backdrop-blur-sm"
           aria-label="Framework"
         >
           {BUILDER_FRAMEWORKS.map((f) => (
@@ -174,10 +176,10 @@ function BuilderPage() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 gap-3 p-3">
         {/* Chat panel */}
-        <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-card">
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <aside className="glass-panel flex w-[320px] shrink-0 flex-col overflow-hidden rounded-2xl">
+          <div className="flex items-center gap-2 border-b border-border/60 bg-white/40 px-3 py-2.5">
             <Bot className="size-3.5 text-primary" />
             <span className="font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Chat to build
@@ -185,7 +187,7 @@ function BuilderPage() {
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="ml-auto h-7 rounded-md border border-input bg-background px-2 text-[11px]"
+              className="ml-auto h-7 rounded-lg border border-border/70 bg-white/70 px-2 text-[11px]"
               aria-label="Model"
             >
               {PUTER_MODELS.map((m) => (
@@ -207,7 +209,7 @@ function BuilderPage() {
                   <button
                     key={s}
                     onClick={() => void send(s)}
-                    className="block w-full rounded-md border border-border px-2 py-1.5 text-left hover:bg-secondary"
+                    className="block w-full rounded-xl border border-border/60 bg-white/50 px-2.5 py-2 text-left transition-colors hover:border-primary/30 hover:bg-white/90"
                   >
                     {s}
                   </button>
@@ -215,7 +217,12 @@ function BuilderPage() {
               </div>
             )}
             {messages.map((m, i) => (
-              <div key={i} className="flex gap-2 text-[11px]">
+              <div
+                key={i}
+                className={`flex gap-2 rounded-xl p-2 text-[11px] ${
+                  m.role === "user" ? "bg-white/40" : "bg-primary/5"
+                }`}
+              >
                 {m.role === "user" ? (
                   <User className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                 ) : (
@@ -226,12 +233,12 @@ function BuilderPage() {
             ))}
             {pending && (
               <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <Loader2 className="size-3.5 animate-spin" /> Building the site…
+                <Loader2 className="size-3.5 animate-spin text-primary" /> Building the site…
               </p>
             )}
           </div>
 
-          <div className="flex items-end gap-2 border-t border-border p-2">
+          <div className="flex items-end gap-2 border-t border-border/60 bg-white/40 p-2">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -242,7 +249,7 @@ function BuilderPage() {
                 }
               }}
               placeholder="Describe a site, or ask for a change…"
-              className="max-h-24 min-h-[38px] resize-none text-xs"
+              className="max-h-24 min-h-[38px] resize-none rounded-xl bg-white/70 text-xs"
             />
             <Button size="sm" className="h-9" disabled={pending || !input.trim()} onClick={() => void send()}>
               <Send className="size-4" />
@@ -251,8 +258,8 @@ function BuilderPage() {
         </aside>
 
         {/* Files + preview/code */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-1 overflow-x-auto border-b border-border bg-card px-2 py-1.5">
+        <div className="glass-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl">
+          <div className="flex items-center gap-1 overflow-x-auto border-b border-border/60 bg-white/40 px-2 py-1.5">
             {files.map((f) => (
               <button
                 key={f.path}
@@ -260,9 +267,9 @@ function BuilderPage() {
                   setActiveFile(f.path);
                   setView("code");
                 }}
-                className={`shrink-0 rounded-md px-2.5 py-1 font-mono text-[11px] transition-colors ${
+                className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[11px] transition-colors ${
                   view === "code" && activeFile === f.path
-                    ? "bg-secondary text-foreground"
+                    ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -293,7 +300,7 @@ function BuilderPage() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 bg-background">
+          <div className="min-h-0 flex-1 bg-white/30">
             {view === "preview" ? (
               <iframe
                 key={framework + files.length}
@@ -310,7 +317,7 @@ function BuilderPage() {
                   </p>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+                    <div className="flex items-center justify-between border-b border-border/60 bg-white/40 px-3 py-1.5">
                       <span className="font-mono text-[11px] text-muted-foreground">{activeFile}</span>
                       <Button
                         variant="ghost"
